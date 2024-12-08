@@ -66,11 +66,11 @@ GRU_IModel = IModel(
 
 Основные цели анализа обучения и валидации включают:
 \begin{itemize}
-    \item \textbf{Оценка функции потерь}: Анализ функции потерь на тренировочных и валидационных данных позволяет выявить динамику обучения, а также возможные проблемы, такие как переобучение или недостаточное обучение.
+    \item \textbf{Оценка функции потерь}: Анализ функции потерь на тренировочных и валидационных данных позволяет выявить динамику обучения, а также возможные проблемы, такие как переобучение или недостаточное обучение. (с помощью метода \textbf{history} из tf)
     \item \textbf{Раннее прекращение обучения}: Обеспечивает остановку обучения, если модель перестала улучшаться, предотвращая ненужные вычисления и переобучение.
     \item \textbf{Сохранение лучшей модели}: Позволяет фиксировать параметры модели с минимальной валидационной ошибкой, чтобы использовать её для дальнейших экспериментов.
     \item \textbf{Визуализация}: Сравнение предсказаний модели с истинной функцией и визуализация потерь предоставляет интуитивное понимание, насколько хорошо модель аппроксимирует данные.
-    \item \textbf{Измерение времени обучения}: Позволяет оценить, насколько эффективно используются вычислительные ресурсы при обучении модели.
+    \item \textbf{Измерение времени обучения}: Позволяет оценить, насколько эффективно используются вычислительные ресурсы при обучении модели. (встроенный метод \texttt{MeasureTrainTime} в DEGANN)
 \end{itemize}
 
 Для достижения этих целей были реализованы и интегрированы несколько callback-функций, обеспечивающих автоматическое выполнение перечисленных выше задач. Эти callback-функции разработаны как часть архитектуры проекта DEGANN и могут быть легко добавлены при обучении любой модели.
@@ -80,32 +80,14 @@ GRU_IModel = IModel(
 
 Для анализа и визуализации обучения были разработаны и внедрены следующие callback-классы:
 \begin{itemize}
-    \item \texttt{LossTracking}: Отслеживает и сохраняет значения функции потерь на тренировочных и валидационных данных.
     \item \texttt{EarlyStopping}: Реализует раннее прекращение обучения при отсутствии улучшений в течение заданного количества эпох.
     \item \texttt{SaveBestModel}: Сохраняет параметры модели с минимальной валидационной ошибкой.
     \item \texttt{VisualizationTS}: Визуализирует процесс обучения и предсказания модели, сравнивая их с истинной функцией.
 \end{itemize}
 
-Ниже приведён пример использования данных callback-функций в процессе обучения модели GRU:
-
-\begin{lstlisting}[language=Python, breaklines, caption=Пример настройки и использования callback-функций, numbers=left]
-from degann.networks.callbacks import MeasureTrainTime, LossTracking, EarlyStopping, SaveBestModel, VisualizationTS
-
-MeasureTrainTime = MeasureTrainTime()
-Loss_tracking = LossTracking()
-Early_stopping = EarlyStopping(patience=100)  # "patience" - the number of epochs without improvement
-Save_best_model = SaveBestModel(GRU_IModel)
-Visualization = VisualizationTS(train_data_x, train_data_y, val_data_x, val_data_y, name_dataset.split('_')[0], funcs)
-
-GRU_IModel.train(train_data_x, train_data_y, validation_data=(val_data_x, val_data_y), epochs=epochs, verbose=0, callbacks=[MeasureTrainTime, Loss_tracking, Early_stopping, Save_best_model, Visualization])
-\end{lstlisting}
-
 \begin{lstlisting}[language=Tex, breaklines, caption=Пример получения данных от callback-функций]
 Epoch 1: finished in: 6.68 seconds | Training Loss: 0.4940, Validation Loss: 0.4203
 Epoch 2: finished in: 0.97 seconds | Training Loss: 0.4340, Validation Loss: 0.4031
-Epoch 3: finished in: 1.05 seconds | Training Loss: 0.3875, Validation Loss: 0.3818
-Epoch 4: finished in: 1.08 seconds | Training Loss: 0.3203, Validation Loss: 0.2576
-Epoch 5: finished in: 1.09 seconds | Training Loss: 0.2171, Validation Loss: 0.1123
 ...
 Epoch 49: finished in: 0.40 seconds | Training Loss: 0.0597, Validation Loss: 0.0272
 Epoch 50: finished in: 0.48 seconds | Training Loss: 0.0617, Validation Loss: 0.0411
@@ -120,8 +102,6 @@ Difference in validation loss = 0.568993
 \end{lstlisting}
 
 \subsubsection{Описание callback-функций}
-
-\textbf{LossTracking}: Позволяет отслеживать значения функции потерь на тренировочных и валидационных данных на каждой эпохе.
 
 \textbf{EarlyStopping}: Реализует механизм ранней остановки обучения, если валидационная ошибка не уменьшается в течение заданного числа эпох \textbf{patience}. Это помогает избежать переобучения и экономит ресурсы.
 
@@ -139,7 +119,6 @@ Difference in validation loss = 0.568993
 
 
 \section{Валидация решения}
-
 
 
 \subsection{Датасет и сложно-аппроксимируемая функция}
