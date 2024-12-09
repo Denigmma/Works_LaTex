@@ -18,11 +18,11 @@
 \newcommand{\academicGroup}{\my@title@group@ru}
 \newcommand{\advisorChair}{\my@title@chair@ru}
 % То, что в квадратных скобках, отображается внизу по центру каждого слайда.
-\title[Короткое название]{\my@title@title@ru}
+\title[GRU в DEGANN]{\my@title@title@ru}
 % То, что в квадратных скобках, отображается в левом нижнем углу.
 \author[\my@title@author@ru]{\my@title@author@ru, группа \academicGroup}
 \institute[СПбГУ]{}
-\date[9 сентября 2024 г.]{}
+\date[10 декабря 2024 г.]{}
 \newcommand{\supervisor}{\my@title@supervisor@ru}
 \newcommand{\supervisorPosition}{\my@title@supervisorPosition@ru}
 \newcommand{\consultant}{\my@title@consultant@ru}
@@ -55,9 +55,6 @@
         \textbf{Научный руководитель:}  \supervisorPosition~\supervisor \\
         % Консультанта может и не быть. Должна быть указана должность или ученая степень
         \textbf{Консультант:}  \consultantPosition~\consultant \\
-        % Для учебной практики не обязателен. Должна быть указана должность или ученая степень
-        \textbf{Рецензент:} \reviewerPosition~\reviewer \\
-        % TODO: добавить условие на включение рецензента в зависимости от вида отчета
     }
     \makeatother
     \begin{center}
@@ -69,188 +66,459 @@
 
 \begin{frame}{Введение}
     \begin{itemize}
-        \item Краткий обзор тематики работы (как вариант~--- устно, пока показывается титульный слайд)
-        \item Не нужно определять общеизвестные понятия
-        \item Применимость/полезность данной работы, обоснование выбора именно этой темы
-        \item Если тема похожа на темы других работ (в том числе прошлых лет), надо явно описать разницу
+        \item Дифференциальные уравнения широко применяются в науке и технике
+        \item Традиционные численные методы сталкиваются с проблемами, связанными с длительным вычислением и недостаточной точностью
+        \item Библиотека для нейросетевой аппроксимации дифференциальных уравнений
+        \item Цель работы: интеграция архитектуры GRU в DEGANN
     \end{itemize}
 \end{frame}
 
 \begin{frame}
-    \frametitle{Существующие решения (инструменты, подходы, алгоритмы)}
+    \frametitle{Архитектура и принцип работы GRU}
     \begin{itemize}
-        \item Перечислить инструменты/подходы, применяемые в области
-        \item Указать их преимущества и недостатки (критика существующих решений/подходов)
+        \item \textbf{RNN (Recurrent Neural Networks):}
+        \begin{itemize}
+            \item Преимущества: используют скрытые состояния для учёта временных зависимостей.
+            \item Проблемы: затухание и взрыв градиентов, затрудняющие обучение на длинных последовательностях.
+        \end{itemize}
+        \item \textbf{GRU (Gated Recurrent Unit):}
+        \begin{itemize}
+            \item обновляющий (\( z_t \)) и сбрасывающий (\( r_t \)) гейты:
+            \[
+            z_t = \sigma(W_z \cdot [h_{t-1}, x_t] + b_z), \quad
+            r_t = \sigma(W_r \cdot [h_{t-1}, x_t] + b_r)
+            \]
+            \item Новое состояние:
+            \[
+            h_t = z_t \odot h_{t-1} + (1 - z_t) \odot \tilde{h}_t, \quad
+            \tilde{h}_t = \tanh(W_h \cdot [r_t \odot h_{t-1}, x_t] + b_h)
+            \]
+        \end{itemize}
+        \item \textbf{Преимущества GRU:}
+        \begin{itemize}
+            \item Сохраняет зависимость в последовательности данных
+            \item Частично решает затухание градиентов, учитывая долгосрочные зависимости.
+            \item Компактная структура.
+        \end{itemize}
     \end{itemize}
-
 \end{frame}
+
 
 \begin{frame}
-    \frametitle{Существующие решения}
-    Возможно, предметная область сложна и потребуется больше одного слайда, но затягивать введение не стоит. Постарайтесь уложиться в 1--2 слайда
+    \frametitle{Рекуррентные слои в TensorFlow}
     \begin{itemize}
-        \item Выводы
-              \begin{itemize}
-                  \item Подвести итог
-                  \item Указать недостатки существующих подходов, на борьбу с которыми
-                        направленна данная работа
-                  \item Чётко сформулировать существующую проблему, которая будет решаться в данной работе
-              \end{itemize}
+        \item \textbf{Использование TensorFlow:}
+        \begin{itemize}
+            \item Для реализации GRU использовался встроенный слой \texttt{tf.keras.layers.GRU}.
+            \item Слой предоставляет механизмы управления потоками данных:
+            \begin{itemize}
+                \item Обновляющий и сбрасывающий гейты.
+                \item Поддержка скрытых состояний.
+            \end{itemize}
+            \item Интеграция GRU с TensorFlow позволяет сосредоточиться на настройке модели и анализе её поведения, а так же настройке гиперпараметров.
+        \end{itemize}
+        \item \textbf{Существующая проблема:}
+        \begin{itemize}
+            \item Текущая версия DEGANN имеет только полносвязные сети, что ограничивает возможности аппроксимации сложных функций.
+        \end{itemize}
+        \item \textbf{Выводы:}
+        \begin{itemize}
+            \item GRU может помочь в аппроксимации для дифференциальных уравнений, где каждое значение функции связано с предыдущими.
+            \item Архитектура GRU решает проблему затухания градиентов, присущую классическим RNN.
+            \item TensorFlow предоставляет гибкие инструменты для разработки и ускоряет процесс интеграции.
+        \end{itemize}
     \end{itemize}
 \end{frame}
+
 
 % Обязательный слайд: четкая формулировка цели данной работы и постановка задачи
 % Описание выносимых на защиту результатов, процесса или особенностей их достижения и т.д.
 \begin{frame}
     \frametitle{Постановка задачи}
-    \textbf{Целью} работы является решение какой-то проблемы %озвученной выше
+    \textbf{Целью} работы является реализация и внедрение рекуррентных нейронных сетей с архитектурой GRU в пакет DEGANN
     \vspace{1em}
 
     \textbf{Задачи}:
     \begin{itemize}
-        \item Выбрать алгоритм, подход, метод %основываясь на проведённом анализе проблемы, области, существующих решений
-        \item Разработать алгоритм, делающий то-то с тем-то
-        \item Доказать корректность алгоритма
-        \item Реализовать предложенный алгоритм
-        \item Провести экспериментальное исследование предложенной реализации
+        \item\subframetitle{Общая архитектура решения}
+            \begin{enumerate}
+                \item Реализация модуля с топологией рекуррентной сети со слоями tensorflow для архитектуры GRU и внедрение его в пакет DEGANN.
+                \item Создание модели с архитектурой GRU. Создание и интеграция callback-функции для расширения функциональности обучения и его трекинга.
+            \end{enumerate}
+        \item\subframetitle{Валидация решения}
+            \begin{enumerate}
+                \item Создание датасета для корректной передачи данных в модель. Реализация сложно-аппроксимируемой функции для тестирования.
+                \item Подбор метрики, настройка гиперпараметров.
+            \end{enumerate}
     \end{itemize}
 \end{frame}
 
-%Идеально, если есть по одному слайду на каждую поставленную задачу
+% слайды с описанием и их решением задч (4 шт)
+
 
 \begin{frame}
-    \frametitle{Алгоритм ABC\footnote{Результаты и обоснования выбора пути достижения цели}}
-    За основу решения взят алгоритм ABC
+    \frametitle{Реализация модуля с топологией рекуррентной сети GRU}
     \begin{itemize}
-        \item Почему именно он, а не другие
-        \item Ключевые особенности выбранного алгоритма, важные для решения поставленных задач
+        \item \textbf{Класс TensorflowGRUNet:}
+        \begin{itemize}
+            \item Наследуется от \texttt{tf.keras.Model}.
+            \item Реализует логику построения и инициализации GRU-слоёв.
+            \item Поддерживает настройку параметров, таких как \texttt{input\_size}, \texttt{block\_size}, \texttt{output\_size}, \texttt{dropout\_rate}.
+        \end{itemize}
+        \item \textbf{Интеграция в DEGANN:}
+        \begin{itemize}
+            \item Через параметр \texttt{net\_type="GRUNet"} в \texttt{IModel}.
+            \item Единообразный интерфейс для различных типов сетей (DenseNet, GRUNet).
+        \end{itemize}
+        \item \textbf{Принципы работы:}
+        \begin{itemize}
+            \item Все слои GRU имеют одинаковое количество нейронов.
+            \item После каждого слоя применяется \texttt{Dropout} для предотвращения переобучения.
+            \item Функция \texttt{call} выполняет последовательный проход данных через GRU-слои и выходной слой.
+        \end{itemize}
+        \item \textbf{Особенности:}
+        \begin{itemize}
+            \item Совместимость с другими модулями DEGANN.
+            \item Экспорт параметров через метод \texttt{to\_dict}.
+        \end{itemize}
     \end{itemize}
 \end{frame}
 
-% TODO(Kakadu): lstlisting will be better
-\defverbatim[colored]{\CodeExample}{
-    \begin{Verbatim}[commandchars=\\\{\}]
-        \textcolor{blue}{string} res = \textcolor{orange}{""};
-        \textcolor{blue}{for}(i = 0; i < l; i++) \{
-        res = \textcolor{orange}{"()"} + res;
-        \}
-    \end{Verbatim}
-}
 
-\begin{frame}%[fragile]
-    \frametitle{Новый алгоритм}
-    \framesubtitle{Иллюстративные возможности: таблицы, картинки, код}
-    % Задается ширина столбцов
-    \begin{columns}[T]
-        \begin{column}[t]{.4\textwidth}
-            \begin{minipage}{2in} \CodeExample         \end{minipage}
-            Аппроксимация:\\
-            \includegraphics[width=2.5cm]{figures/in3.pdf}
+\begin{frame}
+    \frametitle{Модель и callback-функции}
+    \begin{itemize}
+        \item \textbf{Создание модели:}
+        \begin{itemize}
+            \item Использована стандартная архитектура DEGANN на базе класса \texttt{IModel}.
+            \item При создании модели мы просто наследуемся от \texttt{IModel} и передаем нужные параметры сети.
+        \end{itemize}
+        \item \textbf{Основные callback-функции:}
+        \begin{itemize}
+            \item \texttt{EarlyStopping}: Раннее прекращение обучения при отсутствии улучшений.
+            \item \texttt{SaveBestModel}: Сохранение параметров модели с минимальной валидационной ошибкой.
+            \item \texttt{VisualizationTS}: Визуализация функции потерь и предсказаний модели. На графиках можно посмотреть на качество аппроксимации функции.
+        \end{itemize}
+        \item \textbf{Цели callback-функций:}
+        \begin{itemize}
+            \item Отслеживание метрик и динамики обучения. (используем записи history из Tensorflow)
+            \item Оптимизация процесса обучения и предотвращение переобучения.
+            \item Удобный анализ и визуализация результатов.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
 
-            Грамматика:
-            {\begin{align*}
-                start& & &\Coloneq & &s \\
-                s & & &\Coloneq & &\mbox{\texttt{LBR }} s \mbox{\texttt{ RBR }} s \\
-                s & & &\Coloneq & &\varepsilon
-            \end{align*}}
+
+\begin{frame}
+    \frametitle{Датасет и сложно-аппроксимируемая функция}
+    \begin{itemize}
+        \item \textbf{Генерация датасета:}
+        \begin{itemize}
+            \item Использован инструмент DEGANN для генерации данных.
+            \item Выбрана сложно-аппроксимируемая функция \texttt{hardsin}:
+            \[
+            f(x) = \sin\left(\ln(x^{\sin(10x)})\right)
+            \]
+            \item График функции предоставлен на следующем слайде
+        \end{itemize}
+        \item \textbf{Создание временных последовательностей:}
+        \begin{itemize}
+            \item Преобразование данных в последовательности длиной \texttt{time\_steps}.
+            \item Это позволяет GRU использовать контекст предыдущих шагов.
+        \end{itemize}
+        \item \textbf{Добавление шума:}
+        \begin{itemize}
+            \item Шум с нормальным (Гауссовским) распределением.
+            \item Повышает устойчивость модели и адаптацию к реальным данным.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{figures/graph_hardsin.png}
+    \caption{График функции $f(x) = \sin\left(\ln(x^{\sin(10x)})\right)$}
+    \label{fig:hardsin_graph}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{Подбор метрики, настройка гиперпараметров}
+    \begin{itemize}
+        \item \textbf{Функция потерь:}
+        \begin{itemize}
+            \item Использована среднеквадратичная ошибка (MSE):
+            \[
+            \text{MSE} = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2
+            \]
+            \item MSE минимизирует крупные отклонения и стабилизирует сходимость.
+        \end{itemize}
+        \item \textbf{Гиперпараметры модели:}
+        \begin{itemize}
+            \item \textbf{Количество слоёв}: 5, \textbf{нейронов в слое}: 30.
+        \end{itemize}
+        \item \textbf{Оптимизатор:}
+        \begin{itemize}
+            \item Выбран \textit{Adam}, который стабилизирует градиентный спуск и адаптирует скорость обучения.
+            \item Эффективен для временных последовательностей и рекуррентных сетей.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+
+
+\begin{frame}
+    \frametitle{Экспериментальное исследование}
+    \begin{itemize}
+        \item \textbf{Цель эксперимента:}
+        \begin{itemize}
+            \item Сравнить рекуррентные и полносвязные сети на задачах аппроксимации функций.
+            \item Оценить время обучения, значение функции потерь (лосс) и качество аппроксимации.
+        \end{itemize}
+
+        \item \textbf{Условия эксперимента:}
+        \begin{itemize}
+            \item Архитектура:
+            \begin{itemize}
+                \item Количество слоёв: 5.
+                \item Количество нейронов в слое: 30.
+            \end{itemize}
+            \item Количество эпох: 100, 200, 500, 1000 (тестирование на разных значениях).
+        \end{itemize}
+
+        \item \textbf{Набор данных:}
+        \begin{itemize}
+            \item Использованы встроенные функции DEGANN и функция \texttt{hardsin}.
+            \item \texttt{hardsin} была выбрана из-за её сложной математической структуры, которая делает её трудной для аппроксимации.
+            \item Набор данных позволяет объективно оценить возможности архитектур для задач аппроксимации.
+        \end{itemize}
+
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+    \begin{itemize}
+            \item \textbf{Исследовательские вопросы:}
+        \begin{description}
+            \item[RQ1:] Способна ли рекуррентная сеть лучше аппроксимировать встроенные функции DEGANN по сравнению с полносвязной?
+            \item[RQ2:] Насколько значительна разница в точности аппроксимации и скорости обучения?
+        \end{description}
+        \item \textbf{Итоги:}
+        \begin{itemize}
+            \item Эксперимент находится на этапе тестирования.
+            \item Полные результаты анализа будут готовы на завершающем этапе работы.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{Результаты аппроксимации функции hardsin}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=1.1\textwidth]{figures/hardsin_500eph_gru_apr_plot.png}
         \end{column}
-        %\hspace{1cm}
-        \begin{column}[T]{.6\textwidth}
-            \vspace{-2em}
-            \includegraphics[width=1\textwidth]{figures/out3.pdf}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=1.1\textwidth]{figures/hardsin_500eph_dense_apr_plot.png}
         \end{column}
     \end{columns}
 \end{frame}
 
 \begin{frame}
-    \frametitle{Доказательство корректности алгоритма}
-    {\small Формулировки утверждений. Идеи доказательств проговариваются устно.}
-    \begin{rutheorem}[Пифагора: геометрическая формулировка]
-        В прямоугольном треугольнике площадь квадрата, построенного на гипотенузе, равна сумме площадей квадратов, построенных на катетах.
-    \end{rutheorem}
-
-    \begin{rutheorem}[Пифагора: алгебраическая формулировка]
-        В прямоугольном треугольнике квадрат длины гипотенузы равен сумме квадратов длин катетов.
-
-        То есть, если обозначить длину гипотенузы треугольника через $c$, а длины катетов
-        через $a$ и $b$, получим верное равенство: $a^2 + b^2 = c^2$.
-    \end{rutheorem}
-
-    \begin{rutheorem}[Обратная теорема Пифагора]
-        Для всякой тройки положительных чисел $a$, $b$ и $c$, такой, что $a^2 + b^2 = c^2$, существует прямоугольный треугольник с катетами $a$ и $b$ и гипотенузой $c$.
-    \end{rutheorem}
+    \frametitle{Результаты аппроксимации функции hardsin}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=1.1\textwidth]{figures/ch_hardsin_500eph_gru_apr_plot.png}
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=1.1\textwidth]{figures/ch_hardsin_500eph_dense_apr_plot.png}
+        \end{column}
+    \end{columns}
 \end{frame}
 
-\begin{frame}
-    \frametitle{Архитектура решения}
-    \begin{itemize}
-        \item В реализации интересны архитектура, библиотеки, инструменты
-        \item Не надо добавлять на слайд примеры кода
-        \item Текст в квадратиках должен быть читаемым (крупным, а не как тут)
-    \end{itemize}
-    \begin{center}
-        \includegraphics[width=0.7\textwidth]{figures/Activ_SEL_Processing.pdf}
-    \end{center}
-\end{frame}
-
-\begin{frame}[t]
-    \frametitle{Экспериментальное исследование}
-    Постановка эксперимента
-    \begin{itemize}
-        \item На каком наборе данных проводилось экспериментальное исследование, почему были выбраны именно эти данные
-        \item На каком оборудовании проводилось исследование
-        \item Какие решения были выбраны для сравнения и почему
-    \end{itemize}
-\end{frame}
-
-\begin{frame}[t]
-    \frametitle{Результаты экспериментального исследования}
-    \begin{itemize}
-        \item Какие результаты показало экспериментальное исследование
-        \item Желательно привести графики, иллюстрирующие полученные результаты
-              \begin{itemize}
-                  \item У иллюстраций должны быть подписи, у графиков~--- легенда, подписи к осям, например:
-              \end{itemize}
-    \end{itemize}
-    \includegraphics[width=13cm]{figures/dist.png}
-\end{frame}
 
 \begin{frame}
     \frametitle{Результаты}
     \begin{itemize}
-        \item Практически то же, что и на слайде с постановкой задачи, но в совершенной форме~--- что делал лично автор
-        \item Четкое отделение результатов своей работы (особенно для коллективных работ)
-        \item Формулировать глаголами совершенного вида в прошедшем времени (\enquote{сделано}, \enquote{получено})
-        \item Обсуждение (ограничения, валидность, альтернативы)
-        \item Не нужно слайдов типа \enquote{Все}, \enquote{Вопросы?}, \enquote{Спасибо за внимание}
-    \end{itemize}
-
-    \begin{itemize}
-        \item Если результаты были представлены на конференции и опубликованы, это желательно указать
+        \item Разработан и реализован модуль с топологией рекуррентной сети для архитектуры GRU, интегрированный в библиотеку DEGANN.
+        \item Создана модель с архитектурой GRU, включающая следующие callback-функции:
+        \begin{itemize}
+            \item Раннее прекращение обучения.
+            \item Сохранение лучшей модели.
+            \item Визуализация результатов обучения.
+        \end{itemize}
+        \item Подготовлены специальные датасеты для тестирования, включая сложно-аппроксимируемую функцию \texttt{hardsin}. Реализовано добавление шума для повышения устойчивости модели.
+        \item Проведён подбор функции потерь (MSE) и настройка гиперпараметров, обеспечившая баланс между качеством аппроксимации и вычислительными затратами.
     \end{itemize}
 \end{frame}
 
-%\addtocounter{framenumber}{1}
-\appendix
 
 \begin{frame}
-    \frametitle{Дополнительный слайд}
-    Например, с огромной страшной формулой всего, которая нужна для пояснения деталей при ответе на частый вопрос
-
-    \begin{align*}
-        \MoveEqLeft \lim_{\bigtriangleup t \to 0^+}\int_{\bigtriangleup t}^{T} \! \int_{\Omega} \! D(t_1,x) \frac{\varphi(t_1-\bigtriangleup t,x)-\varphi(t_1,x)}{(-\bigtriangleup t)} \, \mathrm{d}x \, \mathrm{d}t_1 \\
-        &= \lim_{\bigtriangleup t \to 0^+} \int_{0}^{T} \! \int_{\Omega} \! D(t_1,x) \frac{\varphi(t_1-\bigtriangleup t,x)-\varphi(t_1,x)}{(-\bigtriangleup t)} \chi_{(\bigtriangleup t,T)}(t_1) \, \mathrm{d}x \, \mathrm{d}t_1 \\
-        &=\int_{0}^{T} \! \int_{\Omega} \! D(t_1,x) \frac{\partial \varphi}{\partial t_1} (t_1,x) \, \mathrm{d}x \, \mathrm{d}t_1
-    \end{align*}
-\end{frame}
-
-\begin{frame}
-    \frametitle{Второй дополнительный слайд}
+\textbf{Предстоящие работы и ланы:}
     \begin{itemize}
-        \item Много дополнительных слайдов не надо: 1--2~вполне достаточно в большинстве случаев
-        \item Кроме формул здесь могут быть схемы, рисунки, таблицы и другие вспомогательные материалы
+        \item Работа с экспериментами и более глубокий анализ результатов пока находятся на стадии тестированя.
+        \item Планируется разработать кастомную реализацию слоёв GRU для расширения функционала DEGANN.
+        \item Продолжить тестирование модели на дополнительных наборах данных.
     \end{itemize}
-
 \end{frame}
 
 \end{document}
+
+%\begin{frame}[t]
+%    \frametitle{Экспериментальное исследование}
+%    Постановка эксперимента
+%    \begin{itemize}
+%        \item На каком наборе данных проводилось экспериментальное исследование, почему были выбраны именно эти данные
+%        \item На каком оборудовании проводилось исследование
+%        \item Какие решения были выбраны для сравнения и почему
+%    \end{itemize}
+%\end{frame}
+%
+%\begin{frame}[t]
+%    \frametitle{Результаты экспериментального исследования}
+%    \begin{itemize}
+%        \item Какие результаты показало экспериментальное исследование
+%        \item Желательно привести графики, иллюстрирующие полученные результаты
+%              \begin{itemize}
+%                  \item У иллюстраций должны быть подписи, у графиков~--- легенда, подписи к осям, например:
+%              \end{itemize}
+%    \end{itemize}
+%    \includegraphics[width=13cm]{figures/dist.png}
+%\end{frame}
+%
+%\begin{frame}
+%    \frametitle{Результаты}
+%    \begin{itemize}
+%        \item Практически то же, что и на слайде с постановкой задачи, но в совершенной форме~--- что делал лично автор
+%        \item Четкое отделение результатов своей работы (особенно для коллективных работ)
+%        \item Формулировать глаголами совершенного вида в прошедшем времени (\enquote{сделано}, \enquote{получено})
+%        \item Обсуждение (ограничения, валидность, альтернативы)
+%        \item Не нужно слайдов типа \enquote{Все}, \enquote{Вопросы?}, \enquote{Спасибо за внимание}
+%    \end{itemize}
+%
+%    \begin{itemize}
+%        \item Если результаты были представлены на конференции и опубликованы, это желательно указать
+%    \end{itemize}
+%\end{frame}
+%
+%%\addtocounter{framenumber}{1}
+%\appendix
+%
+%\begin{frame}
+%    \frametitle{Дополнительный слайд}
+%    Например, с огромной страшной формулой всего, которая нужна для пояснения деталей при ответе на частый вопрос
+%
+%    \begin{align*}
+%        \MoveEqLeft \lim_{\bigtriangleup t \to 0^+}\int_{\bigtriangleup t}^{T} \! \int_{\Omega} \! D(t_1,x) \frac{\varphi(t_1-\bigtriangleup t,x)-\varphi(t_1,x)}{(-\bigtriangleup t)} \, \mathrm{d}x \, \mathrm{d}t_1 \\
+%        &= \lim_{\bigtriangleup t \to 0^+} \int_{0}^{T} \! \int_{\Omega} \! D(t_1,x) \frac{\varphi(t_1-\bigtriangleup t,x)-\varphi(t_1,x)}{(-\bigtriangleup t)} \chi_{(\bigtriangleup t,T)}(t_1) \, \mathrm{d}x \, \mathrm{d}t_1 \\
+%        &=\int_{0}^{T} \! \int_{\Omega} \! D(t_1,x) \frac{\partial \varphi}{\partial t_1} (t_1,x) \, \mathrm{d}x \, \mathrm{d}t_1
+%    \end{align*}
+%\end{frame}
+%
+%\begin{frame}
+%    \frametitle{Второй дополнительный слайд}
+%    \begin{itemize}
+%        \item Много дополнительных слайдов не надо: 1--2~вполне достаточно в большинстве случаев
+%        \item Кроме формул здесь могут быть схемы, рисунки, таблицы и другие вспомогательные материалы
+%    \end{itemize}
+%
+%\end{frame}
+%
+%\end{document}
+%
+%
+%
+%
+%
+%
+%
+%
+%
+%\begin{frame}{Введение}
+%    \begin{itemize}
+%        \item Дифференциальные уравнения широко применяются в науке и технике (физика, биология, экономика).
+%        \item Традиционные численные методы часто сталкиваются с ограничениями по времени вычислений и точности.
+%        \item DEGANN — библиотека для нейросетевой аппроксимации дифференциальных уравнений, но она ограничена полносвязными сетями.
+%        \item Цель работы: интеграция архитектуры GRU для улучшения точности и производительности в DEGANN.
+%        \item GRU эффективны благодаря использованию элементов управления потоком данных (обновление и сброс).
+%    \end{itemize}
+%\end{frame}
+%
+%\begin{frame}{Постановка задачи}
+%    \textbf{Цель:} Расширение функциональности DEGANN путём интеграции архитектуры GRU.\\
+%    \vspace{0.5cm}
+%    \textbf{Задачи:}
+%    \begin{itemize}
+%        \item Разработать модуль для интеграции GRU с TensorFlow.
+%        \item Реализовать модель и callback-функции для отслеживания и улучшения обучения.
+%        \item Создать сложно-аппроксимируемую функцию и провести обучение модели.
+%        \item Настроить гиперпараметры, метрики и оценить производительность GRU.
+%    \end{itemize}
+%\end{frame}
+%
+%\begin{frame}{Обзор существующих решений}
+%    \begin{itemize}
+%        \item RNN:
+%        \begin{itemize}
+%            \item Учитывают временные зависимости, но страдают от затухания/взрывов градиентов.
+%        \end{itemize}
+%        \item GRU:
+%        \begin{itemize}
+%            \item Упрощённая версия LSTM с меньшим числом параметров.
+%            \item Использует обновляющий и сбрасывающий гейты для долгосрочной памяти.
+%        \end{itemize}
+%        \item TensorFlow:
+%        \begin{itemize}
+%            \item Поддержка готовых слоёв GRU (tf.keras.layers.GRU), что упрощает реализацию.
+%        \end{itemize}
+%    \end{itemize}
+%\end{frame}
+%
+%\begin{frame}{Архитектура решения}
+%    \begin{itemize}
+%        \item Реализация класса \textbf{TensorflowGRUNet}, интегрированного в DEGANN через IModel.
+%        \item Основные параметры:
+%        \begin{itemize}
+%            \item \texttt{input\_size}, \texttt{block\_size}, \texttt{output\_size}.
+%            \item Dropout для предотвращения переобучения.
+%        \end{itemize}
+%        \item Callback-функции:
+%        \begin{itemize}
+%            \item Раннее прекращение обучения, визуализация потерь, сохранение лучшей модели.
+%        \end{itemize}
+%    \end{itemize}
+%\end{frame}
+%
+%\begin{frame}{Экспериментальное исследование}
+%    \textbf{Условия эксперимента:}
+%    \begin{itemize}
+%        \item Датасет: функция \texttt{hardsin}, сложная для аппроксимации.
+%        \item Шум добавлен для повышения устойчивости модели.
+%    \end{itemize}
+%    \textbf{Метрики:}
+%    \begin{itemize}
+%        \item Среднеквадратичная ошибка (MSE).
+%    \end{itemize}
+%    \textbf{Результаты:}
+%    \begin{itemize}
+%        \item GRU показала лучшую стабильность и точность по сравнению с полносвязными сетями.
+%        \item Визуализация результатов показывает хорошую аппроксимацию функции.
+%    \end{itemize}
+%\end{frame}
+%
+%\begin{frame}{Заключение}
+%    \begin{itemize}
+%        \item Разработан и интегрирован модуль GRU в DEGANN.
+%        \item Реализованы callback-функции для улучшения обучения.
+%        \item Проведён эксперимент, подтвердивший эффективность GRU для задач аппроксимации.
+%        \item Код доступен в репозитории DEGANN.
+%    \end{itemize}
+%    \textbf{Планы:} изучение других архитектур (например, LSTM) для дальнейшего расширения функционала DEGANN.
+%\end{frame}
