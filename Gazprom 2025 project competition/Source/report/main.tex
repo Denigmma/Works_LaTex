@@ -11,10 +11,6 @@
 \usepackage{hyperref}
 \usepackage{listings}
 
-\usepackage{newunicodechar}
-\newunicodechar{└}
-\newunicodechar{├}
-
 
 
 \lstset{
@@ -43,7 +39,7 @@
 \begin{titlepage}
     % Верхняя часть: логотип, название олимпиады и проекта, по центру
     \begin{center}
-        \includegraphics[width=0.3\textwidth]{../Include/logo.png}\\[1cm]
+        \includegraphics[width=0.3\textwidth]{../../Include/logo.png}\\[1cm]
 
         {\itshape\Large\bfseries Студенческая олимпиада «Газпром» - конкурс проектов\par}
         \vspace{0.5cm}
@@ -188,29 +184,30 @@
 
 \begin{lstlisting}
 Project/
-├── app/
-│   ├── __init__.py
-│   ├── main.py               # Серверное приложение на базе FastAPI, реализующее REST API и дашборд
-│   ├── inference.py          # Функции предобработки данных и вызова модели
-│   └── dashboard.html        # HTML-страница для визуального контроля показателей риска
-├── data/
-│   ├── generate_dataset.py   # Формирует синтетический датасет и имитирует поступление данных
-│   ├── sensor_train_data.csv # Датасет для обучения модели
-│   ├── sensor_val_data.csv   # Датасет для валидации модели
-│   └── sensor_test_data.csv  # Датасет для тестирования модели
-├── model/
-│   ├── __init__.py
-│   ├── model.py              # Подготовка данных, обучение GRU модели, логирование
-│   ├── logs/
-│   │   ├── total_log.txt     # Информация о модели и отслеживаемых параметрах
-│   │   └── training_log.csv  # Метрики на каждой эпохе обучения
-│   └── saved_models/
-│       └── gru_model.h5      # Сохранённая обученная модель
-├── simulation_data/
-│   └── data_simulator.py     # Скрипт для симуляции поступления данных в реальном времени
-├── requirements.txt          # Необходимые зависимости
-└── README.md                 # Документация проекта
++-- app/
+|   +-- __init__.py
+|   +-- main.py               # Серверное приложение на базе FastAPI, реализующее REST API и дашборд
+|   +-- inference.py          # Функции предобработки данных и вызова модели
+|   `-- dashboard.html        # HTML-страница для визуального контроля показателей риска
++-- data/
+|   +-- generate_dataset.py   # Формирует синтетический датасет и имитирует поступление данных
+|   +-- sensor_train_data.csv # Датасет для обучения модели
+|   +-- sensor_val_data.csv   # Датасет для валидации модели
+|   `-- sensor_test_data.csv  # Датасет для тестирования модели
++-- model/
+|   +-- __init__.py
+|   +-- model.py              # Подготовка данных, обучение GRU модели, логирование
+|   +-- logs/
+|   |   +-- total_log.txt     # Информация о модели и отслеживаемых параметрах
+|   |   `-- training_log.csv  # Метрики на каждой эпохе обучения
+|   `-- saved_models/
+|       `-- gru_model.h5      # Сохранённая обученная модель
++-- simulation_data/
+|   `-- data_simulator.py     # Скрипт для симуляции поступления данных в реальном времени
++-- requirements.txt          # Необходимые зависимости
+`-- README.md                 # Документация проекта
 \end{lstlisting}
+
 
 \noindent
 Каждый каталог содержит файлы и скрипты, отвечающие за свою часть функционала:
@@ -626,7 +623,7 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 Ниже приведён скриншот дашборда, отображающего текущие предсказания:
 \begin{center}
-    \includegraphics[width=0.7\textwidth]{../Include/dashboard.png}
+    \includegraphics[width=0.7\textwidth]{../../Include/dashboard.png}
 \end{center}
 
 Разработанная система обладает потенциалом для дальнейшего расширения функциональности.
