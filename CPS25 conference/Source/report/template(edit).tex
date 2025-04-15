@@ -16,8 +16,8 @@
 \title{Реализация и внедрение архитектуры\\ Gated Recurrent Unit\\ в пакет нейросетевой аппроксимации дифференциальных уравнений\\ DEGANN}
 
 \renewcommand{\thefootnote}{ }
-{\footnotetext{{\it Мурадян Денис Степанович} -- студент, Санкт-Петербургский государственный университет, e-mail: muradyan.denis@inbox.ru, тел.: +79052045723;}}
-{\footnotetext{{\it Алимов Павел Геннадьевич} -- магистрант, Санкт-Петербургский государственный университет, e-mail: st076209@student.spbu.ru, тел.: +79045181399;}}
+{\footnotetext{{\it Мурадян Денис Степанович} -- студент, Санкт-Петербургский государственный университет, e-mail: muradyan.denis@inbox.ru, тел.: +7(905)204-57-23;}}
+{\footnotetext{{\it Алимов Павел Геннадьевич} -- магистрант, Санкт-Петербургский государственный университет, e-mail: st076209@student.spbu.ru, тел.: +7(904)518-13-99;}}
 %{\footnotetext{{\it Гориховский Вячеслав Игоревич } -- доцент, Санкт-Петербургский государственный университет; e-mail: gorihovskyvyacheslav@gmail.com}}
 % если по ГРАНТУ
 {\footnotetext{Работа выполнена при финансовой поддержке поддержке СПБГУ, грант № 116636233}} % и/или СПбГУ, НИР № 0.00.000.0000}}
@@ -119,12 +119,12 @@ GRUNet (на основе рекуррентных слоёв GRU) и DenseNet (традиционный многослойный 
 которые представляют собой достаточно сложные для аппроксимации зависимости:
 
 \begin{itemize}
-    \item функция $\displaystyle f_{\sin}(x)=\sin(10x)$ демонстрирует периодическую нелинейность,
+\item функция \hbox{$\displaystyle f_{\sin}(x)=\sin(10x)$} демонстрирует периодическую нелинейность,
 что позволяет проверить способность модели захватывать колебательные процессы;
-\item функция $\displaystyle f_{\text{hyperbol}}(x)=\frac{x^2+0,\!5}{x+0,\!1}$ обладает неоднородной
+\item функция \hbox{$\displaystyle f_{\text{hyperbol}}(x)=\frac{x^2+0,\!5}{x+0,\!1}$} обладает неоднородной
 зависимостью, где квадратичный рост сочетается с особенностями в малых значениях $x$, что требует
 от модели адаптивного поведения в различных областях определения;
-\item функция $\displaystyle f_{\text{hardsin}}(x)=\sin\Bigl(\ln\bigl(x^{\sin(10x)}\bigr)\Bigr)$,
+\item функция \hbox{$\displaystyle f_{\text{hardsin}}(x)=\sin\Bigl(\ln\bigl(x^{\sin(10x)}\bigr)\Bigr)$},
 включающая логарифмическое преобразование и экспоненциальные эффекты, ещё более усложняет задачу
 аппроксимации за счёт усиленной нелинейности.
 \end{itemize}
@@ -138,7 +138,7 @@ GRUNet (на основе рекуррентных слоёв GRU) и DenseNet (традиционный многослойный 
 \podrazdel{\textbf{Параметры моделей}} Для каждой архитектуры эксперименты проводятся при фиксированном времени обучения.
 В частности, результаты тестирования собираются для трёх вариантов времени обучения: 15, 30 и 45 секунд.
 При каждом варианте фиксируется функция потерь -- Mean Squared Error (MSE), метрики -- Mean Absolute Percentage Error (MAPE)
-и коэффициент детерминации ($R^2$),а также затраты по памяти.
+и коэффициент детерминации ($R^2$), а также затраты по памяти.
 %\begin{itemize}
 %    \item \textbf{Функция потерь:} Mean Squared Error (MSE),
 %    \item \textbf{Метрики:} Mean Absolute Percentage Error (MAPE) и коэффициент детерминации ($R^2$)
@@ -152,7 +152,6 @@ GRUNet (на основе рекуррентных слоёв GRU) и DenseNet (традиционный многослойный 
 
 
 \podrazdel{Результаты эксперимента} В таблицах 1--3 приведены результаты эксперимента для каждого из выбранных интервалов времени обучения.
-\\
 
 \Table{Результаты эксперимента (время обучения 15 секунд)}{|p{2cm}|p{1.5cm}|p{1.1cm}|p{0.7cm}|p{1cm}|p{0.7cm}|}{
 \textbf{Архитектура} & \textbf{Тестовая функция} & \textbf{Память (MB)} & \textbf{Loss MSE} & \textbf{MAPE} & \textbf{$R^2$} \nextline
@@ -164,6 +163,7 @@ DenseNet & hardsin & 41,77  & 0,017 & 10,100 & 0,902 \nextline
 DenseNet & hyperbol & 33,99 & 0,051 & 13,346 & 0,819 \nextline
 }
 
+\newpage
 \Table{Результаты эксперимента (время обучения 30 секунд)}{|p{2cm}|p{1.5cm}|p{1.1cm}|p{0.7cm}|p{1cm}|p{0.7cm}|}{
 \textbf{Архитектура} & \textbf{Тестовая функция} & \textbf{Память (MB)} & \textbf{Loss MSE} & \textbf{MAPE} & \textbf{$R^2$} \nextline
 GRUNet   & sin      & 115,39 & 0,003 & 4,169 & 0,994 \nextline
@@ -216,15 +216,15 @@ DenseNet & hyperbol  & 47,98  & 0,004 & 3,138 & 0,987 \nextline
 
 \begin{thebibliography}{40}
 
-\bibitem{SODE} Hairer E., Wanner G. Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems. – Heidelberg: Springer-Verlag, 1996. – 629 с.
+\bibitem{SODE} Hairer E., Wanner G. Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems. Heidelberg: Springer-Verlag, 1996. 629 с.
 
-\bibitem{degann} Пакет нейросетевой аппроксимации дифференциальных уравнений // DEGANN [Электронный ресурс]. – URL \url{https://pypi.org/project/degann/} (дата обращения: 10.03.2025).
+\bibitem{degann} Пакет нейросетевой аппроксимации дифференциальных уравнений // DEGANN [Электронный ресурс]. URL \url{https://pypi.org/project/degann/} (дата обращения: 10.03.2025).
 
-\bibitem{odenn} Chen R.T.Q., Rubanova Y., Bettencourt J., Duvenaud D. Neural Ordinary Differential Equations // Advances in Neural Information Processing Systems. – 2018. – No 31. – P. 6571–6583.
+\bibitem{odenn} Chen R.T.Q., Rubanova Y., Bettencourt J., Duvenaud D. Neural Ordinary Differential Equations // Advances in Neural Information Processing Systems. 2018. No 31. P. 6571–6583.
 
-\bibitem{IBM_RNN} Stryker C. What is a Recurrent Neural Network? // IBM [Электронный ресурс]. – 2024. – URL \url{https://www.ibm.com/think/topics/recurrent-neural-networks} (дата обращения: [укажите дату обращения]).
+\bibitem{IBM_RNN} Stryker C. What is a Recurrent Neural Network? // IBM [Электронный ресурс]. 2024. URL \url{https://www.ibm.com/think/topics/recurrent-neural-networks} (дата обращения: 04.02.2025).
 
-\bibitem{BG} Mosquera C., Van Houdt G., Napoles G. A review on the long short-term memory model // Artificial Intelligence Review. – 2020. – No 53. – P. 5929–5955.
+\bibitem{BG} Mosquera C., Van Houdt G., Napoles G. A review on the long short-term memory model // Artificial Intelligence Review. 2020. No 53. P. 5929–5955.
 
 \end{thebibliography}
 
