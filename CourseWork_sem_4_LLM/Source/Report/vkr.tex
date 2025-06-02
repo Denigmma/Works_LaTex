@@ -1,0 +1,28 @@
+% !BIB program = bibtex
+% !TEX TS-program = xelatex
+% !TeX spellcheck = ru_RU
+
+\documentclass[14pt, russian]{matmex-diploma-custom}
+
+\input{preamble}
+
+\begin{document}
+\input{title}
+\maketitle
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+\newfontfamily\myfont{CMU Sans Serif}
+
+\input{000_intro}
+\input{010_task}
+\input{020_related}
+\input{030_solution}
+\input{040_experiment}
+\input{050_conclusion}
+
+\setmonofont{CMU Typewriter Text}
+\bibliographystyle{ugost2008ls}
+\bibliography{vkr}
+
+\end{document}
