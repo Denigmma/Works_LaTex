@@ -7,6 +7,8 @@
   [ russian
   , aspectratio=1610 % Для защит онлайн лучше использовать разрешение не 4х3
   ] {beamer}
+\usepackage{blkarray}
+\usepackage{listings}
 
 
 \input{preamble.tex}
@@ -55,9 +57,6 @@
         \textbf{Научный руководитель:}  \supervisorPosition~\supervisor \\
         % Консультанта может и не быть. Должна быть указана должность или ученая степень
         \textbf{Консультант:}  \consultantPosition~\consultant \\
-        % Для учебной практики не обязателен. Должна быть указана должность или ученая степень
-        \textbf{Рецензент:} \reviewerPosition~\reviewer \\
-        % TODO: добавить условие на включение рецензента в зависимости от вида отчета
     }
     \makeatother
     \begin{center}
@@ -67,190 +66,177 @@
 \end{frame}
 }
 
+
 \begin{frame}{Введение}
     \begin{itemize}
-        \item Краткий обзор тематики работы (как вариант~--- устно, пока показывается титульный слайд)
-        \item Не нужно определять общеизвестные понятия
-        \item Применимость/полезность данной работы, обоснование выбора именно этой темы
-        \item Если тема похожа на темы других работ (в том числе прошлых лет), надо явно описать разницу
+        \item Веб-парсинг: извлечение структурированных данных из веб-страниц
+        \item Проблема: сайты бывают статическими и динамическими, для каждого нужен свой парсер и его постоянная поддержка
+        \item Идея: автоматизация генерации parser-скриптов с помощью больших языковых моделей (LLM)
     \end{itemize}
 \end{frame}
 
-\begin{frame}
-    \frametitle{Существующие решения (инструменты, подходы, алгоритмы)}
+\begin{frame}{Существующие решения и их недостатки}
     \begin{itemize}
-        \item Перечислить инструменты/подходы, применяемые в области
-        \item Указать их преимущества и недостатки (критика существующих решений/подходов)
+        \item \textbf{Статический парсинг (requests + BeautifulSoup)}
+            \begin{itemize}
+                \item + Лёгкость и скорость запуска
+                \item – Не работает с динамическим JS-контентом, требует ручных селекторов
+            \end{itemize}
+        \item \textbf{Динамический парсинг (Selenium)}
+            \begin{itemize}
+                \item + Обходит любой JS
+                \item – Тоже требует писать и поддерживать скрипты-парсеры под каждую структуру
+            \end{itemize}
+        \item \textbf{Общий недостаток}: отсутствует единый самонастраивающийся механизм — при изменении верстки ручной код ломается
     \end{itemize}
-
 \end{frame}
 
-\begin{frame}
-    \frametitle{Существующие решения}
-    Возможно, предметная область сложна и потребуется больше одного слайда, но затягивать введение не стоит. Постарайтесь уложиться в 1--2 слайда
+\begin{frame}{LLM-подход и семантический кэш}
     \begin{itemize}
-        \item Выводы
-              \begin{itemize}
-                  \item Подвести итог
-                  \item Указать недостатки существующих подходов, на борьбу с которыми
-                        направленна данная работа
-                  \item Чётко сформулировать существующую проблему, которая будет решаться в данной работе
-              \end{itemize}
+        \item \textbf{Structuring}: извлечение ответа на запрос пользователя напрямую из очищенного текста страницы
+        \item \textbf{Codegen (двойное применение LLM)}:
+            \begin{itemize}
+                \item \emph{HintGen}: генерирует подсказки, селекторы и few-shot примеры
+                \item \emph{CodeGen}: на основе подсказок формирует Python-скрипт-парсер и выполняет его
+            \end{itemize}
+        \item \textbf{Проблемы}: дороговизна запросов в LLM и время инференса ответа
+        \item \textbf{Решение}: семантический кэш (SQLite + ChromaDB), для одинаковых ссылок и схожих embedding запросов - запросы в LLM не отправляются, а используются ранее кешированные парсеры
     \end{itemize}
 \end{frame}
 
-% Обязательный слайд: четкая формулировка цели данной работы и постановка задачи
-% Описание выносимых на защиту результатов, процесса или особенностей их достижения и т.д.
-\begin{frame}
-    \frametitle{Постановка задачи}
-    \textbf{Целью} работы является решение какой-то проблемы %озвученной выше
+\begin{frame}{Постановка задачи}
+    \textbf{Цель проекта:} оптимизировать сбор данных из открытых веб-источников за счёт автоматизации написания парсеров веб-страниц с помощью больших языковых моделей (LLM)
+
     \vspace{1em}
-
-    \textbf{Задачи}:
+    \textbf{Задачи:}
     \begin{itemize}
-        \item Выбрать алгоритм, подход, метод %основываясь на проведённом анализе проблемы, области, существующих решений
-        \item Разработать алгоритм, делающий то-то с тем-то
-        \item Доказать корректность алгоритма
-        \item Реализовать предложенный алгоритм
-        \item Провести экспериментальное исследование предложенной реализации
+        \item Определять тип страницы (статическая или динамическая)
+        \item Реализовать две стратегии очистки HTML (Full / Lite)
+        \item Внедрить режимы LLM-парсинга: Structuring и Codegen
+        \item Построить семантический кэш (SQLite + ChromaDB)
+        \item Разработать интерфейсы: REST API, веб-фронтенд, Gradio
+        \item Провести экспериментальное исследование
     \end{itemize}
 \end{frame}
 
-%Идеально, если есть по одному слайду на каждую поставленную задачу
 
-\begin{frame}
-    \frametitle{Алгоритм ABC\footnote{Результаты и обоснования выбора пути достижения цели}}
-    За основу решения взят алгоритм ABC
-    \begin{itemize}
-        \item Почему именно он, а не другие
-        \item Ключевые особенности выбранного алгоритма, важные для решения поставленных задач
-    \end{itemize}
-\end{frame}
-
-% TODO(Kakadu): lstlisting will be better
-\defverbatim[colored]{\CodeExample}{
-    \begin{Verbatim}[commandchars=\\\{\}]
-        \textcolor{blue}{string} res = \textcolor{orange}{""};
-        \textcolor{blue}{for}(i = 0; i < l; i++) \{
-        res = \textcolor{orange}{"()"} + res;
-        \}
-    \end{Verbatim}
-}
-
-\begin{frame}%[fragile]
-    \frametitle{Новый алгоритм}
-    \framesubtitle{Иллюстративные возможности: таблицы, картинки, код}
-    % Задается ширина столбцов
-    \begin{columns}[T]
-        \begin{column}[t]{.4\textwidth}
-            \begin{minipage}{2in} \CodeExample         \end{minipage}
-            Аппроксимация:\\
-            \includegraphics[width=2.5cm]{figures/in3.pdf}
-
-            Грамматика:
-            {\begin{align*}
-                start& & &\Coloneq & &s \\
-                s & & &\Coloneq & &\mbox{\texttt{LBR }} s \mbox{\texttt{ RBR }} s \\
-                s & & &\Coloneq & &\varepsilon
-            \end{align*}}
-        \end{column}
-        %\hspace{1cm}
-        \begin{column}[T]{.6\textwidth}
-            \vspace{-2em}
-            \includegraphics[width=1\textwidth]{figures/out3.pdf}
-        \end{column}
-    \end{columns}
-\end{frame}
-
-\begin{frame}
-    \frametitle{Доказательство корректности алгоритма}
-    {\small Формулировки утверждений. Идеи доказательств проговариваются устно.}
-    \begin{rutheorem}[Пифагора: геометрическая формулировка]
-        В прямоугольном треугольнике площадь квадрата, построенного на гипотенузе, равна сумме площадей квадратов, построенных на катетах.
-    \end{rutheorem}
-
-    \begin{rutheorem}[Пифагора: алгебраическая формулировка]
-        В прямоугольном треугольнике квадрат длины гипотенузы равен сумме квадратов длин катетов.
-
-        То есть, если обозначить длину гипотенузы треугольника через $c$, а длины катетов
-        через $a$ и $b$, получим верное равенство: $a^2 + b^2 = c^2$.
-    \end{rutheorem}
-
-    \begin{rutheorem}[Обратная теорема Пифагора]
-        Для всякой тройки положительных чисел $a$, $b$ и $c$, такой, что $a^2 + b^2 = c^2$, существует прямоугольный треугольник с катетами $a$ и $b$ и гипотенузой $c$.
-    \end{rutheorem}
-\end{frame}
-
-\begin{frame}
-    \frametitle{Архитектура решения}
-    \begin{itemize}
-        \item В реализации интересны архитектура, библиотеки, инструменты
-        \item Не надо добавлять на слайд примеры кода
-        \item Текст в квадратиках должен быть читаемым (крупным, а не как тут)
-    \end{itemize}
+\begin{frame}{Архитектура решения}
     \begin{center}
-        \includegraphics[width=0.7\textwidth]{figures/Activ_SEL_Processing.pdf}
+        \resizebox{\textwidth}{!}{%
+        \begin{tikzpicture}[
+            >=latex,
+            node distance=0.8cm and 1.5cm,
+            block/.style={
+                draw=black,
+                fill=blue!15,
+                thick,
+                rectangle,
+                rounded corners,
+                minimum height=2cm,
+                minimum width=4cm,
+                inner sep=5mm,
+                align=center,
+                font=\bfseries\Large
+            },
+            arrow/.style={
+                ->,
+                thick
+            }
+        ]
+            % Основная линия
+            \node[block]                       (input)   {Ввод URL\\и запроса};
+            \node[block,right=of input]        (detect)  {Детектор\\динамичности};
+            \node[block,right=of detect]       (fetch)   {Fetcher\\(requests / Selenium)};
+            \node[block,right=of fetch]        (clean)   {Очистка\\(Full / Lite)};
+            \node[block,right=of clean]        (dispatch){Диспетчер\\режимов};
+            \node[block,right=of dispatch]     (cache)   {Семантический\\кэш};
+            \node[block,right=of cache]        (output)  {Вывод JSON};
+
+            % Ветви LLM
+            \node[block,above=of dispatch]     (struct)  {Structuring\\(извлечение ответа)};
+            \node[block,below=of dispatch]     (codegen) {Codegen\\(HintGen → CodeGen)};
+
+            % Стрелки
+            \draw[arrow] (input)    -- (detect)
+                          (detect)  -- (fetch)
+                          (fetch)   -- (clean)
+                          (clean)   -- (dispatch)
+                          (dispatch)-- (cache)
+                          (cache)   -- (output);
+
+            \draw[arrow] (dispatch) -- (struct) -- (cache);
+            \draw[arrow] (dispatch) -- (codegen) -- (cache);
+        \end{tikzpicture}
+        }
     \end{center}
 \end{frame}
 
-\begin{frame}[t]
-    \frametitle{Экспериментальное исследование}
-    Постановка эксперимента
+
+
+
+\begin{frame}{Результаты экспериментального исследования}
+    \begin{table}
+        \centering
+        \small
+        \begin{tabular}{lcccc}
+            \toprule
+            \textbf{Сайт / Запрос} & \textbf{Codegen (cold)} & \textbf{Codegen (warm)} & \textbf{Structuring} \\
+            \midrule
+            \textbf{Gismетео} & & & & \\
+            «Текущая температура в СПБ»      & 23.28 & 5.61 & 8.62 \\
+            \addlinespace
+            \textbf{СПбГУ} & & & & \\
+            «Выведи последние новости СПбГУ»  & 40.91 & 6.09 & 7.34 \\
+            \addlinespace
+            \textbf{Яндекс.Финанс} & & & & \\
+            «Курс доллара к рублю»           & 17.59 & 4.61 & 12.23 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+
+\begin{frame}[fragile]{Примеры JSON-ответов}
+    \begin{block}{Gismетео: «Текущая температура в Санкт-Петербурге»}
+\begin{lstlisting}[language=json,breaklines,keepspaces]
+{
+  "query_data": "Текущая температура в Санкт-Петербурге: +11°C\nТемпература по ощущению: +10°C\n"
+}
+\end{lstlisting}
+    \end{block}
+
+    \begin{block}{Яндекс.Финанс: «Курс доллара США к рублю»}
+\begin{lstlisting}[language=json,breaklines,keepspaces]
+{
+  "query_data": "Курс доллара США к рублю: 78,62 руб\nИзменение курса: −2,88 руб (−3,53%)\nИсточник: ЦБ РФ\n"
+}
+\end{lstlisting}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Итоги работы}
     \begin{itemize}
-        \item На каком наборе данных проводилось экспериментальное исследование, почему были выбраны именно эти данные
-        \item На каком оборудовании проводилось исследование
-        \item Какие решения были выбраны для сравнения и почему
+        \item Разработана модульная система для парсинга статических и динамических веб-страниц
+        \item Реализованы два режима LLM-генерации парсеров:
+            \begin{itemize}
+                \item прямое извлечение ответа из текста (Structuring)
+                \item генерация Python-скрипта с помощью подсказок (Codegen)
+            \end{itemize}
+        \item Внедрён семантический кэш для повторного использования сгенерированных скриптов
+        \item Предоставлены разные интерфейсы: библиотека, REST API, веб-приложение и Gradio
+        \item Экспериментально подтверждена эффективность подхода на реальных сайтах
     \end{itemize}
 \end{frame}
 
-\begin{frame}[t]
-    \frametitle{Результаты экспериментального исследования}
-    \begin{itemize}
-        \item Какие результаты показало экспериментальное исследование
-        \item Желательно привести графики, иллюстрирующие полученные результаты
-              \begin{itemize}
-                  \item У иллюстраций должны быть подписи, у графиков~--- легенда, подписи к осям, например:
-              \end{itemize}
-    \end{itemize}
-    \includegraphics[width=13cm]{figures/dist.png}
-\end{frame}
 
 \begin{frame}
-    \frametitle{Результаты}
-    \begin{itemize}
-        \item Практически то же, что и на слайде с постановкой задачи, но в совершенной форме~--- что делал лично автор
-        \item Четкое отделение результатов своей работы (особенно для коллективных работ)
-        \item Формулировать глаголами совершенного вида в прошедшем времени (\enquote{сделано}, \enquote{получено})
-        \item Обсуждение (ограничения, валидность, альтернативы)
-        \item Не нужно слайдов типа \enquote{Все}, \enquote{Вопросы?}, \enquote{Спасибо за внимание}
-    \end{itemize}
+    \begin{center}
+        \includegraphics[width=6cm]{figures/qr.png}
+        \vspace{1em}
 
-    \begin{itemize}
-        \item Если результаты были представлены на конференции и опубликованы, это желательно указать
-    \end{itemize}
-\end{frame}
-
-%\addtocounter{framenumber}{1}
-\appendix
-
-\begin{frame}
-    \frametitle{Дополнительный слайд}
-    Например, с огромной страшной формулой всего, которая нужна для пояснения деталей при ответе на частый вопрос
-
-    \begin{align*}
-        \MoveEqLeft \lim_{\bigtriangleup t \to 0^+}\int_{\bigtriangleup t}^{T} \! \int_{\Omega} \! D(t_1,x) \frac{\varphi(t_1-\bigtriangleup t,x)-\varphi(t_1,x)}{(-\bigtriangleup t)} \, \mathrm{d}x \, \mathrm{d}t_1 \\
-        &= \lim_{\bigtriangleup t \to 0^+} \int_{0}^{T} \! \int_{\Omega} \! D(t_1,x) \frac{\varphi(t_1-\bigtriangleup t,x)-\varphi(t_1,x)}{(-\bigtriangleup t)} \chi_{(\bigtriangleup t,T)}(t_1) \, \mathrm{d}x \, \mathrm{d}t_1 \\
-        &=\int_{0}^{T} \! \int_{\Omega} \! D(t_1,x) \frac{\partial \varphi}{\partial t_1} (t_1,x) \, \mathrm{d}x \, \mathrm{d}t_1
-    \end{align*}
-\end{frame}
-
-\begin{frame}
-    \frametitle{Второй дополнительный слайд}
-    \begin{itemize}
-        \item Много дополнительных слайдов не надо: 1--2~вполне достаточно в большинстве случаев
-        \item Кроме формул здесь могут быть схемы, рисунки, таблицы и другие вспомогательные материалы
-    \end{itemize}
-
+        \scriptsize{Воспользоваться проектом можно, отсканировав QR-код для перехода на Hugging Face Space}
+    \end{center}
 \end{frame}
 
 \end{document}
+
