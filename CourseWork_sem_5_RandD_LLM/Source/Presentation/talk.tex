@@ -1,0 +1,242 @@
+% !TEX TS-program = xelatex
+% !BIB program = bibtex
+% !TeX spellcheck = ru_RU
+% !TEX root = talk.tex
+
+\documentclass
+  [ russian
+  , aspectratio=1610 % Для защит онлайн лучше использовать разрешение не 4х3
+  ] {beamer}
+\usepackage{blkarray}
+\usepackage{listings}
+
+
+\input{preamble.tex}
+\makeatletter
+
+\input{pretitle.tex}
+\input{title.tex}
+
+\newcommand{\academicGroup}{\my@title@group@ru}
+\newcommand{\advisorChair}{\my@title@chair@ru}
+% То, что в квадратных скобках, отображается внизу по центру каждого слайда.
+\title[Auto parsing system]{\my@title@title@ru}
+% То, что в квадратных скобках, отображается в левом нижнем углу.
+\author[\my@title@author@ru]{\my@title@author@ru, группа \academicGroup}
+\institute[СПбГУ]{}
+\date[8 июня 2025 г.]{}
+\newcommand{\supervisor}{\my@title@supervisor@ru}
+\newcommand{\supervisorPosition}{\my@title@supervisorPosition@ru}
+\newcommand{\consultant}{\my@title@consultant@ru}
+\newcommand{\consultantPosition}{\my@title@consultantPosition@ru}
+\newcommand{\reviewer}{\my@title@reviewer@ru}
+\newcommand{\reviewerPosition}{\my@title@reviewerPosition@ru}
+\newcommand{\defenseYear}{\my@title@year@ru}
+
+\makeatother
+\begin{document}
+{
+\setbeamertemplate{footline}{}
+% Лого университета или организации, отображается в шапке титульного листа
+\begin{frame}
+    \includegraphics[width=1.4cm]{figures/SPbGU_Logo.png}
+    \vspace{-35pt}
+    \hspace{-10pt}
+    \begin{center}
+        \begin{tabular}{c}
+            \scriptsize{Санкт-Петербургский государственный университет} \\
+            \scriptsize{\advisorChair}
+        \end{tabular}
+        \titlepage
+    \end{center}
+
+    \btVFill
+
+    {\scriptsize
+        % У научного руководителя должна быть указана научная степень
+        \textbf{Научный руководитель:}  \supervisorPosition~\supervisor \\
+        % Консультанта может и не быть. Должна быть указана должность или ученая степень
+        \textbf{Консультант:}  \consultantPosition~\consultant \\
+    }
+    \makeatother
+    \begin{center}
+        \vspace{5pt}
+        \scriptsize{Санкт-Петербург\\ \defenseYear}
+    \end{center}
+\end{frame}
+}
+
+
+\begin{frame}{Введение}
+    \begin{itemize}
+        \item Веб-парсинг: извлечение структурированных данных из веб-страниц
+        \item Проблема: сайты бывают статическими и динамическими, для каждого нужен свой парсер и его постоянная поддержка
+        \item Идея: автоматизация генерации parser-скриптов с помощью больших языковых моделей (LLM)
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Существующие решения и их недостатки}
+    \begin{itemize}
+        \item \textbf{Статический парсинг (requests + BeautifulSoup)}
+            \begin{itemize}
+                \item + Лёгкость и скорость запуска
+                \item – Не работает с динамическим JS-контентом, требует ручных селекторов
+            \end{itemize}
+        \item \textbf{Динамический парсинг (Selenium)}
+            \begin{itemize}
+                \item + Обходит любой JS
+                \item – Тоже требует писать и поддерживать скрипты-парсеры под каждую структуру
+            \end{itemize}
+        \item \textbf{Общий недостаток}: отсутствует единый самонастраивающийся механизм — при изменении верстки ручной код ломается
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{LLM-подход и семантический кэш}
+    \begin{itemize}
+        \item \textbf{Structuring}: извлечение ответа на запрос пользователя напрямую из очищенного текста страницы
+        \item \textbf{Codegen (двойное применение LLM)}:
+            \begin{itemize}
+                \item \emph{HintGen}: генерирует подсказки, селекторы и few-shot примеры
+                \item \emph{CodeGen}: на основе подсказок формирует Python-скрипт-парсер и выполняет его
+            \end{itemize}
+        \item \textbf{Проблемы}: дороговизна запросов в LLM и время инференса ответа
+        \item \textbf{Решение}: семантический кэш (SQLite + ChromaDB), для одинаковых ссылок и схожих embedding запросов - запросы в LLM не отправляются, а используются ранее кешированные парсеры
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Постановка задачи}
+    \textbf{Цель проекта:} оптимизировать сбор данных из открытых веб-источников за счёт автоматизации написания парсеров веб-страниц с помощью больших языковых моделей (LLM)
+
+    \vspace{1em}
+    \textbf{Задачи:}
+    \begin{itemize}
+        \item Определять тип страницы (статическая или динамическая)
+        \item Реализовать две стратегии очистки HTML (Full / Lite)
+        \item Внедрить режимы LLM-парсинга: Structuring и Codegen
+        \item Построить семантический кэш (SQLite + ChromaDB)
+        \item Разработать интерфейсы: REST API, веб-фронтенд, Gradio
+        \item Провести экспериментальное исследование
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Архитектура решения}
+    \begin{center}
+        \resizebox{\textwidth}{!}{%
+        \begin{tikzpicture}[
+            >=latex,
+            node distance=0.8cm and 1.5cm,
+            block/.style={
+                draw=black,
+                fill=blue!15,
+                thick,
+                rectangle,
+                rounded corners,
+                minimum height=2cm,
+                minimum width=4cm,
+                inner sep=5mm,
+                align=center,
+                font=\bfseries\Large
+            },
+            arrow/.style={
+                ->,
+                thick
+            }
+        ]
+            % Основная линия
+            \node[block]                       (input)   {Ввод URL\\и запроса};
+            \node[block,right=of input]        (detect)  {Детектор\\динамичности};
+            \node[block,right=of detect]       (fetch)   {Fetcher\\(requests / Selenium)};
+            \node[block,right=of fetch]        (clean)   {Очистка\\(Full / Lite)};
+            \node[block,right=of clean]        (dispatch){Диспетчер\\режимов};
+            \node[block,right=of dispatch]     (cache)   {Семантический\\кэш};
+            \node[block,right=of cache]        (output)  {Вывод JSON};
+
+            % Ветви LLM
+            \node[block,above=of dispatch]     (struct)  {Structuring\\(извлечение ответа)};
+            \node[block,below=of dispatch]     (codegen) {Codegen\\(HintGen → CodeGen)};
+
+            % Стрелки
+            \draw[arrow] (input)    -- (detect)
+                          (detect)  -- (fetch)
+                          (fetch)   -- (clean)
+                          (clean)   -- (dispatch)
+                          (dispatch)-- (cache)
+                          (cache)   -- (output);
+
+            \draw[arrow] (dispatch) -- (struct) -- (cache);
+            \draw[arrow] (dispatch) -- (codegen) -- (cache);
+        \end{tikzpicture}
+        }
+    \end{center}
+\end{frame}
+
+
+
+
+\begin{frame}{Результаты экспериментального исследования}
+    \begin{table}
+        \centering
+        \small
+        \begin{tabular}{lcccc}
+            \toprule
+            \textbf{Сайт / Запрос} & \textbf{Codegen (cold)} & \textbf{Codegen (warm)} & \textbf{Structuring} \\
+            \midrule
+            \textbf{Gismетео} & & & & \\
+            «Текущая температура в СПБ»      & 23.28 & 5.61 & 8.62 \\
+            \addlinespace
+            \textbf{СПбГУ} & & & & \\
+            «Выведи последние новости СПбГУ»  & 40.91 & 6.09 & 7.34 \\
+            \addlinespace
+            \textbf{Яндекс.Финанс} & & & & \\
+            «Курс доллара к рублю»           & 17.59 & 4.61 & 12.23 \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+
+\begin{frame}[fragile]{Примеры JSON-ответов}
+    \begin{block}{Gismетео: «Текущая температура в Санкт-Петербурге»}
+\begin{lstlisting}[language=json,breaklines,keepspaces]
+{
+  "query_data": "Текущая температура в Санкт-Петербурге: +11°C\nТемпература по ощущению: +10°C\n"
+}
+\end{lstlisting}
+    \end{block}
+
+    \begin{block}{Яндекс.Финанс: «Курс доллара США к рублю»}
+\begin{lstlisting}[language=json,breaklines,keepspaces]
+{
+  "query_data": "Курс доллара США к рублю: 78,62 руб\nИзменение курса: −2,88 руб (−3,53%)\nИсточник: ЦБ РФ\n"
+}
+\end{lstlisting}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Итоги работы}
+    \begin{itemize}
+        \item Разработана модульная система для парсинга статических и динамических веб-страниц
+        \item Реализованы два режима LLM-генерации парсеров:
+            \begin{itemize}
+                \item прямое извлечение ответа из текста (Structuring)
+                \item генерация Python-скрипта с помощью подсказок (Codegen)
+            \end{itemize}
+        \item Внедрён семантический кэш для повторного использования сгенерированных скриптов
+        \item Предоставлены разные интерфейсы: библиотека, REST API, веб-приложение и Gradio
+        \item Экспериментально подтверждена эффективность подхода на реальных сайтах
+    \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+    \begin{center}
+        \includegraphics[width=6cm]{figures/qr.png}
+        \vspace{1em}
+
+        \scriptsize{Воспользоваться проектом можно, отсканировав QR-код для перехода на Hugging Face Space}
+    \end{center}
+\end{frame}
+
+\end{document}
+
