@@ -1,0 +1,108 @@
+\documentclass[a4paper,14pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{geometry}
+%\geometry{left=1in,right=1in,top=1in,bottom=1in}
+\geometry{left=1.4cm,right=1.4cm,top=1cm,bottom=1cm}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{fontawesome5}
+\usepackage{setspace}
+
+
+\titleformat{\section}{\bfseries\large}{\thesection}{1cm}{}
+\titleformat{\subsection}{\bfseries\large}{\thesubsection}{1cm}{}
+
+\titlespacing{\section}{0pt}{0.5em}{0.5em}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\setlist{nosep}
+
+\begin{document}
+
+\begin{center}
+    {\Huge \bfseries Денис Mурадян} \\
+    \vspace{0.5em}
+    {\Large \bfseries Machine Learning Engineer} \\
+    \vspace{1em}
+    \faPhone~ \href{tel:89052045723}{89052045723} \hspace{1em}
+    \faEnvelope~ \href{mailto:muradyan.denis@inbox.ru}{muradyan.denis@inbox.ru} \hspace{1em}
+    \faHome~ \href{https://yandex.ru/maps/-/CHRjvNpm}{Санкт-Петербург, Россия} \\
+    \vspace{0.5em}
+    \faTelegram~ \href{https://t.me/DenisMuradyan}{Telegram (@DenisMuradyan)}
+    \faGithub~ \href{https://github.com/Denigmma}{GitHub (Denigmma)} \hspace{1em}
+\end{center}
+
+\section*{\textbf{О себе:}}
+\hrule
+NLP-инженер, специализируюсь на LLM и системах интеллектуальной обработки текста: RAG, AI assistants, LLM agents. Есть опыт проектирования решения полного цикла, разработка инфраструктуры и вывод в продакшн.
+
+\section*{Навыки}
+\hrule
+\vspace{0.5em}
+\begin{itemize}
+    \item \textbf{NLP-LLM}: RAG pipelines, LLM agents, semantic search-methods; Prompt Engineering; LangChain/LangGraph, HF Transformers; LLM API integration (GigaChat, GPT, Mistral, Qwen).
+    \item \textbf{ML}: classical ML, neural networks, time series analysis, model evaluation, feature engineering, A/B testing; (PyTorch, TensorFlow)
+    \item \textbf{Data Engineering}: data processing \& analytics (Pandas, Polars, NumPy); SQL/DBs (PostgreSQL, SQLite); vector DBs \& indexing (ChromaDB, FAISS, BM25).
+    \item \textbf{MLOps}: FastAPI (ASGI), Docker, CI/CD, deployment (incl. HF Spaces), Git.
+    \item \textbf{Languages}: Python; Bash; LaTeX; SQL (basic); C++ (basic).
+\end{itemize}
+
+
+\section*{Образование}
+\hrule
+\vspace{0.5em}
+\begin{itemize}
+    \item \textbf{СПБГУ}, Математико-механический факультет, направление "Искусственный интеллект и наука о данных". 2023–2027 (3 курс)
+\end{itemize}
+
+\section*{Олимпиады}
+\hrule
+\vspace{0.5em}
+\begin{itemize}
+    \item \textbf{\href{https://yandex.ru/profi/?etext=}{«Я профессионал»}} (Yandex), трек «Искусственный интеллект» - \textbf{призер} 2024-2025 \href{https://github.com/Denigmma/Practice_LogBook/blob/main/Yandex/Я%20профессионал%20(olimp)/2024-2025/Нормативные%20документы%20и%20диплом/Диплом%20призера%20VIII%20сезона%20ЯП%20ИИ.pdf}{certificate}
+    \item \textbf{\href{https://psrs.spbu.ru/}{«PSRS»}} (SPBU), трек «Вычислительные технологии» - \textbf{победитель} 2024-2025 \href{https://github.com/Denigmma/Practice_LogBook/blob/main/SPBU%20olympics%20Petropolitan%20Science%20(Re)Search/2024-2025/Diploma%20winner%2024-25.pdf}{certificate}
+    \item \textbf{\href{https://studolymp.gazprom.ru/}{«Газпром»}}, трек «Информационные системы и технологии» - \textbf{призер} 2024-2025 \href{https://github.com/Denigmma/Practice_LogBook/blob/main/Gazprom/Диплом%20Мурадян%20Денис%20Степанович%20по%20профилю%20_Информационные%20системы%20и%20технологии_.pdf}{certificate}
+\end{itemize}
+
+\section*{Научная деятельность}
+\hrule
+\vspace{0.5em}
+\begin{itemize}
+    \item Выступал на \textbf{LVI Международной научной конференции} Control Processes and Stability (CPS25), в Санкт-Петербурге 7 – 11 апреля 2025 года. \\
+    \textbf{Тематика:} «Использование рекуррентных нейронных сетей в аппроксимации дифференциальных уравнений»\\
+    Статья опубликовалась в сборнике трудов конференции \href{https://www.elibrary.ru/item.asp?id=82486855}{Elibrary}
+\end{itemize}
+
+
+\section*{Проектная деятельность}
+\hrule
+\vspace{0.5em}
+\begin{itemize}
+
+\item \textbf{Автоматизированная система парсинга данных на основе LLM}\\ \href{https://github.com/Denigmma/Automated_LLM_data_parsing_system}{GitHub Automated LLM data parsing system}\\
+Реализовал LLM-систему парсинга веб-данных по запросу и кэшированием (SQLite, ChromaDB/SBERT). Работал с Mistral AI, занимался prompt-engineering, внедрил auto few-shot систему и семантический поиск для извлечения данных из кэша. Дополнитеольно: проект портировался под агентное решение
+
+
+\item \textbf{Хакатон SpbTechRun 2024 - 3 место} \\ \href{https://github.com/Denigmma/Hackathon_SPBTechRun_ILiveHereBot}{GitHub (Hackathon SPBTechRun ILiveHereBot)} \\
+Разработал LLM-чатбота «Я Здесь Живу» на базе GigaChat для ответов жителям Санкт-Петербурга: RAG-система на LangChain с локальной векторной БД, парсинг открытых городских API, prompt-tuning; Бек: интеграция через Telegram Bot API, развёртывание на FastAPI + Docker.
+
+\item \textbf{Прогнозирование отказов оборудования в нефтегазовой промышленности} \\
+\href{https://github.com/Denigmma/Gazprom_AI_analyzer_equipment_failure}{Gazprom AI analyzer equipment failure}.\\
+\textit{Разработано для финального этапа студенческой олимпиады «Газпром»}\\
+Создал систему прогнозирования и раннего предупреждения аварийных ситуаций на RNN(GRU) по многомерным временным рядам (показаниям с датчиков в реальном времени); AUC 0.97, Recall 0.91, Accuracy 0.91, Precision 0.84.
+Деплой на HF space, FastAPI с real-time dashboard.
+
+
+%\item \textbf{Рекомендательная ситстема новостей} \\
+%\href{https://github.com/Denigmma/NewsRecSysBot}{NewsRecSysBot - demo}\\
+%Рекомендательная система новостей в Telegram: сбор контента из публичных каналов, онбординг через LLM-агента из свободного текста, кандидаты на эмбеддингах в Chroma (user→item, item→item, слабый user→user) + rerank Logistic MF по лайкам/дизлайкам и MMR-диверсификация.
+
+\item \textbf{Внедрение архитектуры рекуррентных нейронных сетей GRU в библиотеку}\\ \href{https://github.com/Krekep/degann}{DEGANN}\\
+    Работал с рекуррентными нейронными сетями в рамках пакета нейросетевой аппроксимации дифференциальных уравнений.
+
+\end{itemize}
+\end{document}
