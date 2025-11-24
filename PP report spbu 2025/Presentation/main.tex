@@ -1,0 +1,642 @@
+\documentclass[aspectratio=1610,12pt]{beamer} % обязательно разрешение 16*10 для удобного показа
+
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+
+%  Русский язык и шрифты (pdfLaTeX) 
+\usepackage[T2A]{fontenc}          % Кириллица (кодировка шрифтов)
+\usepackage[utf8]{inputenc}        % Кодировка исходника UTF-8
+\usepackage[russian]{babel}        % Локализация и переносы
+\usepackage{cmap}                  % Поисковость/копируемость текста в PDF (кириллица)
+
+%  Математика и графика 
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{graphicx}
+\graphicspath{{./}{./figures/}}     % добавь путь к папке с картинками при необходимости
+
+%  Ссылки 
+\usepackage{hyperref}
+\hypersetup{unicode=true}
+
+%  Оформление beamer 
+\usetheme{Madrid}                   %  CambridgeUS, Madrid, Berlin и т.д.
+\usecolortheme{default}
+\usefonttheme{serif}                % шрифт с засечками (как в отчёте)
+\setbeamertemplate{navigation symbols}{}  % убрать нав. кнопки
+\setbeamertemplate{footline}[frame number] % номер слайда внизу справа
+
+\begin{document}
+
+\title[Тема]{Граф алгоритма и параллелизм: как структура зависимостей определяет скорость вычислений}
+\author[Мурадян Д. С.]{Мурадян Денис Степанович}
+\institute[СПбГУ, ММФ]{Санкт\mbox{-}Петербургский государственный университет\\
+Математико\mbox{-}механический факультет\\
+Искусственный интеллект и наука о данных\\[0.3em]
+Бакалавриат, 3 курс}
+\date{\number\year}
+
+\titlegraphic{\vspace{-1em}\includegraphics[height=1.2cm]{spbu_logo.png}}
+
+
+\begin{frame}[plain,noframenumbering]
+  \titlepage
+\end{frame}
+
+
+
+
+\begin{frame}{Введение}
+  \begin{itemize}
+    \item В параллельном программировании важна не только архитектура компьютера и число ядер, но и \textbf{структура самого алгоритма}.
+    \item Будем смотреть на алгоритм как на \textbf{граф операций и зависимостей} между ними.
+    \item Один и тот же объём вычислений можно организовать по-разному: с большим количеством независимых шагов или с длинной цепочкой зависимостей.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Цели и структура доклада}
+  \begin{itemize}
+    \item Структура алгоритма как граф операций и зависимостей
+    \item Базовые понятия теории графов, необходимые для анализа параллелизма
+    \item Граф алгоритма, параллельные формы, ярусы, высота и ширина
+    \item Пример вычисления произведения $n$ чисел и принцип сдваивания
+    \item Концепция неограниченного параллелизма, критический путь и оценка времени выполнения
+    \item Связь графов алгоритмов с реальными системами параллельных вычислений
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Алгоритм как ориентированный граф зависимостей}
+  \begin{itemize}
+    \item В графовом представлении вершины соответствуют отдельным операциям или шагам алгоритма.
+    \item Ориентированное ребро показывает отношение предшествования: результат одной операции используется в другой.
+    \item Таким образом, граф фиксирует \textbf{частичный порядок} выполнения операций, порождённый зависимостями.
+  \end{itemize}
+\end{frame}
+
+
+  \begin{frame}{Ацикличность и ориентированные ациклические графы (DAG -  directed acyclic graph)}
+  \begin{itemize}
+    \item Для корректного порядка вычислений граф зависимостей должен быть \textbf{ацикличным}.
+    \item Ориентированный ациклический граф (DAG) естественно моделирует причинно-временной порядок операций.
+    \item Наличие ориентированного цикла означало бы логическое противоречие: операция косвенно зависит сама от себя.
+  \end{itemize}
+  \centering
+    \includegraphics[width=0.7\textwidth]{dag.png}
+\end{frame}
+
+
+\begin{frame}{Топологический порядок и выполнение алгоритма}
+  \begin{itemize}
+    \item Любое корректное выполнение алгоритма должно быть согласовано с ориентацией рёбер графа зависимостей. (DAG)
+    \item Задача топологической сортировки: по DAG построить линейный порядок вершин, в котором каждое ребро направлено от более ранней вершины к более поздней.
+    \item Такая сортировка позволяет перейти от частичного порядка зависимостей к конкретному плану выполнения операций и используется при планировании вычислений и распараллеливании.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Граф алгоритма: общее представление}
+  \begin{columns}[T]
+    \column{0.6\textwidth}
+      \begin{block}{Идея}
+        \begin{itemize}
+          \item Алгоритм представляем в виде ориентированного ациклического графа.
+          \item Вершины обозначают отдельные операции, вычислительные шаги.
+          \item Рёбра фиксируют зависимости «что должно быть выполнено раньше».
+          \item Такой граф задаёт частичный порядок вычислений.
+        \end{itemize}
+      \end{block}
+    \column{0.38\textwidth}
+      \begin{center}
+        \begin{tikzpicture}[
+          >=Stealth,
+          every node/.style={circle,draw,inner sep=1pt,font=\small}
+        ]
+          % фиксированные координаты, чтобы ничего не съезжало
+          \node (A) at (0,1) {$A$};
+          \node (B) at (0,-1) {$B$};
+          \node (C) at (2,1) {$C$};
+          \node (D) at (2,-1) {$D$};
+          \node (E) at (1,-2.2) {$E$};
+
+          \draw[->] (A) -- (C);
+          \draw[->] (A) -- (D);
+          \draw[->] (B) -- (D);
+          \draw[->] (C) -- (E);
+          \draw[->] (D) -- (E);
+        \end{tikzpicture}
+      \end{center}
+  \end{columns}
+\end{frame}
+
+
+
+  \begin{frame}{Зависимости в графе алгоритма}
+  \begin{block}{Основные виды зависимостей}
+    \begin{itemize}
+      \item \textbf{По данным}: результат одной операции используется в другой.
+      \item \textbf{По управлению}: выбор ветви или продолжение цикла зависит от предыдущих результатов.
+      \item При формировании графа алгоритма учитываются оба типа, они и задают частичный порядок.
+    \end{itemize}
+  \end{block}
+
+  \vspace{0.4cm}
+
+  \begin{exampleblock}{Иллюстрация зависимости по данным}
+    \[
+      t_1 = a + b,\quad t_2 = t_1 \cdot c
+    \]
+    Операция умножения не может начаться, пока не вычислена сумма: в графе есть ребро от вершины $t_1$ к вершине $t_2$.
+  \end{exampleblock}
+\end{frame}
+
+
+\begin{frame}{Примеры графов для простых фрагментов}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \begin{exampleblock}{Арифметическое выражение $(a+b)\cdot(c+d)$}
+        \begin{itemize}
+          \item Сложения $(a+b)$ и $(c+d)$ независимы.
+          \item Оба результата должны быть готовы до умножения.
+        \end{itemize}
+      \end{exampleblock}
+
+      \begin{exampleblock}{Цикл без и с зависимостью между итерациями}
+        \begin{itemize}
+          \item Независимый цикл: $x_i = f(i)$ — итерации не зависят друг от друга.
+          \item Рекуррентный цикл: $x_i = x_{i-1} + g(i)$ — образуется цепочка зависимостей.
+        \end{itemize}
+      \end{exampleblock}
+
+    \column{0.4\textwidth}
+      \begin{center}
+        % дерево выражения (a+b)*(c+d)
+        \begin{tikzpicture}[
+          >=Stealth,
+          every node/.style={circle,draw,inner sep=1pt,font=\scriptsize}
+        ]
+          % верхний уровень (операнды)
+          \node (a) at (-1,1) {$a$};
+          \node (b) at (1,1) {$b$};
+          \node (c) at (3,1) {$c$};
+          \node (d) at (5,1) {$d$};
+
+          % сложения
+          \node (p1) at (0,0) {$+$};
+          \node (p2) at (4,0) {$+$};
+
+          % умножение
+          \node (mul) at (2,-1) {$\times$};
+
+          \draw[->] (a) -- (p1);
+          \draw[->] (b) -- (p1);
+          \draw[->] (c) -- (p2);
+          \draw[->] (d) -- (p2);
+          \draw[->] (p1) -- (mul);
+          \draw[->] (p2) -- (mul);
+        \end{tikzpicture}
+
+        \vspace{0.6cm}
+
+        % цепочка для рекуррентного цикла
+        \begin{tikzpicture}[
+          >=Stealth,
+          every node/.style={circle,draw,inner sep=1pt,font=\scriptsize}
+        ]
+          \node (x1) at (0,0) {$x_1$};
+          \node (x2) at (1.7,0) {$x_2$};
+          \node (x3) at (3.4,0) {$x_3$};
+
+          \draw[->] (x1) -- (x2);
+          \draw[->] (x2) -- (x3);
+        \end{tikzpicture}
+      \end{center}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Параллельные формы графа}
+  \begin{block}{Ярусы и параллельная форма}
+    \begin{itemize}
+      \item Рассмотрим ориентированный ациклический граф $G=(V,E)$.
+      \item \textbf{Ярус} (уровень) — подмножество вершин, которые можно выполнить одновременно после завершения всех их предшественников.
+      \item \textbf{Параллельная форма} — разбиение множества $V$ на упорядоченные ярусы
+            \[
+              V = L_1 \cup L_2 \cup \dots \cup L_k,
+            \]
+            такое, что все рёбра идут из более ранних ярусов в более поздние.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+
+\begin{frame}{Высота и ширина графа}
+  \begin{columns}[T]
+    \column{0.58\textwidth}
+      \begin{block}{Характеристики параллельной формы}
+        \begin{itemize}
+          \item \textbf{Высота} $h(G)$ — число ярусов в минимальной параллельной форме графа.
+          \item В модели неограниченного числа процессоров $h(G)$ задаёт минимальное число шагов времени.
+          \item \textbf{Ширина} $w(G)$ — максимальное число вершин в одном ярусе:
+                \[
+                  w(G) = \max_j |L_j|.
+                \]
+          \item Ширина оценивает потенциальное максимальное число независимых операций на одном шаге.
+        \end{itemize}
+      \end{block}
+    \column{0.38\textwidth}
+      \begin{center}
+        \begin{tikzpicture}[
+          >=Stealth,
+          every node/.style={circle,draw,inner sep=1pt,font=\scriptsize}
+        ]
+          % три яруса
+          \node (a) at (0,1.5) {$A$};
+          \node (b) at (1.5,1.5) {$B$};
+
+          \node (c) at (0,0) {$C$};
+          \node (d) at (1.5,0) {$D$};
+
+          \node (e) at (0.75,-1.5) {$E$};
+
+          \draw[->] (a) -- (c);
+          \draw[->] (a) -- (d);
+          \draw[->] (b) -- (d);
+          \draw[->] (c) -- (e);
+          \draw[->] (d) -- (e);
+
+          % подписи ярусов
+          \node[anchor=east,font=\tiny] at (-0.3,1.5) {$L_1$};
+          \node[anchor=east,font=\tiny] at (-0.3,0) {$L_2$};
+          \node[anchor=east,font=\tiny] at (-0.3,-1.5) {$L_3$};
+        \end{tikzpicture}
+
+        \vspace{0.2cm}
+
+        {\scriptsize $h(G)=3,\quad w(G)=2$}
+      \end{center}
+  \end{columns}
+\end{frame}
+
+
+
+\begin{frame}{Пример: произведение $n$ чисел — последовательный алгоритм}
+  \begin{block}{Схема вычислений для $n = 8$}
+    \[
+    \begin{array}{ll}
+      \text{Данные:} & a_1\quad a_2\quad a_3\quad a_4\quad a_5\quad a_6\quad a_7\quad a_8 \\[0.3em]
+      \text{Ярус 1:} & a_1 a_2 \\[0.2em]
+      \text{Ярус 2:} & (a_1 a_2) a_3 \\[0.2em]
+      \text{Ярус 3:} & (a_1 a_2 a_3) a_4 \\[0.2em]
+      \text{Ярус 4:} & (a_1 a_2 a_3 a_4) a_5 \\[0.2em]
+      \text{Ярус 5:} & (a_1 a_2 a_3 a_4 a_5) a_6 \\[0.2em]
+      \text{Ярус 6:} & (a_1 a_2 a_3 a_4 a_5 a_6) a_7 \\[0.2em]
+      \text{Ярус 7:} & (a_1 a_2 a_3 a_4 a_5 a_6 a_7) a_8
+    \end{array}
+    \]
+  \end{block}
+
+  \begin{block}{Характеристики параллельной формы}
+    \begin{itemize}
+      \item Высота: $7$ (каждое умножение — отдельный ярус).
+      \item Ширина: $1$ (на каждом шаге выполняется одна операция умножения).
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+
+\begin{frame}{Пример: произведение $n$ чисел — процесс сдваивания}
+  \begin{block}{Параллельная схема для $n = 8$}
+    \[
+    \begin{array}{ll}
+      \text{Данные:} & a_1\quad a_2\quad a_3\quad a_4\quad a_5\quad a_6\quad a_7\quad a_8 \\[0.4em]
+      \text{Ярус 1:} & (a_1 a_2)\quad (a_3 a_4)\quad (a_5 a_6)\quad (a_7 a_8) \\[0.4em]
+      \text{Ярус 2:} & (a_1 a_2 a_3 a_4)\quad (a_5 a_6 a_7 a_8) \\[0.4em]
+      \text{Ярус 3:} & (a_1 a_2 a_3 a_4 a_5 a_6 a_7 a_8)
+    \end{array}
+    \]
+  \end{block}
+
+  \vspace{0.4cm}
+
+  \begin{block}{Характеристики параллельной формы}
+    \begin{itemize}
+      \item Высота: $3$.
+      \item Ширина на первом ярусе: $4$ (четыре независимых произведения пар).
+      \item В общем случае при сдваивании высота порядка $\lceil \log_2 n \rceil$, ширина — порядка $n/2$ на первом ярусе.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+
+\begin{frame}{Сортировка слиянием: дерево рекурсий}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \begin{block}{Структура алгоритма}
+        \begin{itemize}
+          \item Массив рекурсивно делится на две части до подмассивов длины $1$.
+          \item На каждом уровне получаем несколько независимых подзадач сортировки.
+          \item Затем результаты попарно сливаются при движении обратно вверх.
+        \end{itemize}
+      \end{block}
+
+      \begin{exampleblock}{Глубина и уровни}
+        \begin{itemize}
+          \item Глубина дерева рекурсий пропорциональна логарифму длины массива.
+          \item На каждом уровне количество подзадач удваивается по мере деления.
+        \end{itemize}
+      \end{exampleblock}
+
+    \column{0.4\textwidth}
+      \begin{center}
+        \begin{tikzpicture}[
+          >=Stealth,
+          level distance=0.9cm,
+          level 1/.style={sibling distance=2.8cm},
+          level 2/.style={sibling distance=1.4cm},
+          level 3/.style={sibling distance=0.7cm},
+          every node/.style={rectangle,draw,inner sep=2pt,font=\scriptsize}
+        ]
+          \node (r) {$[1..8]$}
+            child { node {$[1..4]$}
+              child { node {$[1..2]$}
+                child { node {$[1]$} }
+                child { node {$[2]$} }
+              }
+              child { node {$[3..4]$}
+                child { node {$[3]$} }
+                child { node {$[4]$} }
+              }
+            }
+            child { node {$[5..8]$}
+              child { node {$[5..6]$}
+                child { node {$[5]$} }
+                child { node {$[6]$} }
+              }
+              child { node {$[7..8]$}
+                child { node {$[7]$} }
+                child { node {$[8]$} }
+              }
+            };
+        \end{tikzpicture}
+
+        \vspace{0.2cm}
+        {\scriptsize Дерево рекурсивных вызовов для $n=8$}
+      \end{center}
+  \end{columns}
+\end{frame}
+
+
+
+\begin{frame}{Параллельное выполнение сортировки слиянием}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+      \begin{block}{Граф операций слияния для $n = 8$}
+        \[
+        \begin{array}{ll}
+          \text{Уровень 0:} & a_1\ a_2\ a_3\ a_4\ a_5\ a_6\ a_7\ a_8 \\[0.3em]
+          \text{Уровень 1:} & m_{12}\quad m_{34}\quad m_{56}\quad m_{78} \\[0.3em]
+          \text{Уровень 2:} & m_{1234}\quad m_{5678} \\[0.3em]
+          \text{Уровень 3:} & m_{1..8}
+        \end{array}
+        \]
+      \end{block}
+
+      \begin{exampleblock}{Параллельная форма}
+        \begin{itemize}
+          \item На каждом уровне слияния несколько независимых операций.
+          \item Каждый уровень можно рассматривать как отдельный ярус графа.
+        \end{itemize}
+      \end{exampleblock}
+
+    \column{0.4\textwidth}
+      \begin{center}
+        \begin{tikzpicture}[
+          >=Stealth,
+          every node/.style={circle,draw,inner sep=1pt,font=\scriptsize}
+        ]
+          % Уровень 0: исходные элементы
+          \node (a1) at (0,1.8) {$a_1$};
+          \node (a2) at (0.8,1.8) {$a_2$};
+          \node (a3) at (1.6,1.8) {$a_3$};
+          \node (a4) at (2.4,1.8) {$a_4$};
+          \node (a5) at (3.2,1.8) {$a_5$};
+          \node (a6) at (4.0,1.8) {$a_6$};
+          \node (a7) at (4.8,1.8) {$a_7$};
+          \node (a8) at (5.6,1.8) {$a_8$};
+
+          % Уровень 1: пары
+          \node (m12) at (0.4,0.8) {$m_{12}$};
+          \node (m34) at (2.0,0.8) {$m_{34}$};
+          \node (m56) at (3.6,0.8) {$m_{56}$};
+          \node (m78) at (5.2,0.8) {$m_{78}$};
+
+          % Уровень 2: четверки
+          \node (m1234) at (1.2,-0.2) {$m_{1234}$};
+          \node (m5678) at (4.4,-0.2) {$m_{5678}$};
+
+          % Уровень 3: весь массив
+          \node (m1_8) at (2.8,-1.2) {$m_{1..8}$};
+
+          % Рёбра
+          \draw[->] (a1) -- (m12);
+          \draw[->] (a2) -- (m12);
+
+          \draw[->] (a3) -- (m34);
+          \draw[->] (a4) -- (m34);
+
+          \draw[->] (a5) -- (m56);
+          \draw[->] (a6) -- (m56);
+
+          \draw[->] (a7) -- (m78);
+          \draw[->] (a8) -- (m78);
+
+          \draw[->] (m12) -- (m1234);
+          \draw[->] (m34) -- (m1234);
+
+          \draw[->] (m56) -- (m5678);
+          \draw[->] (m78) -- (m5678);
+
+          \draw[->] (m1234) -- (m1_8);
+          \draw[->] (m5678) -- (m1_8);
+        \end{tikzpicture}
+
+        \vspace{0.2cm}
+        {\scriptsize DAG операций слияния}
+      \end{center}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}{Критический путь в графе алгоритма}
+  \begin{columns}[T]
+    \begin{column}{0.58\textwidth}
+      \begin{itemize}
+        \item Путь в графе — цепочка операций, связанных зависимостями «раньше → позже».
+        \item \textbf{Критический путь} — самый длинный путь от входа к выходу графа.
+        \item Его длина совпадает с минимально возможной высотой параллельной формы.
+        \item Операции на критическом пути остаются строго последовательными.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \centering
+      \begin{tikzpicture}[>=Stealth, node distance=0.9cm]
+        \tikzstyle{v}=[circle,draw,inner sep=1.5pt,minimum size=6pt]
+
+        \node[v] (s) {};
+        \node[v,below left=of s] (a) {};
+        \node[v,below right=of s] (b) {};
+        \node[v,below=of a] (c) {};
+        \node[v,below=of b] (d) {};
+        \node[v,below right=of c] (e) {};
+
+        \draw[->] (s) -- (a);
+        \draw[->] (s) -- (b);
+        \draw[->] (a) -- (c);
+        \draw[->] (b) -- (d);
+        \draw[->] (c) -- (e);
+        \draw[->] (d) -- (e);
+
+        % критический путь
+        \draw[very thick,red,->] (s) -- (a);
+        \draw[very thick,red,->] (a) -- (c);
+        \draw[very thick,red,->] (c) -- (e);
+      \end{tikzpicture}
+
+      {\small Критический путь выделен красным}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+
+\begin{frame}{Концепция неограниченного параллелизма}
+  \begin{itemize}
+    \item Идеализированная модель: процессоров сколь угодно много, операции выполняются синхронно.
+    \item Передача данных считается мгновенной и без конфликтов.
+    \item Время вычислений определяется только зависимостями в графе алгоритма.
+    \item \textbf{Цель: построение алгоритмов минимальной высоты.}
+    \item Высота графа в такой модели равна нижней границе времени выполнения.
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Внутренний параллелизм}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \begin{itemize}
+        \item Внутренний параллелизм задаётся структурой алгоритма — формой графа зависимостей.
+        \item Он определяется длиной критического пути и шириной ярусов.
+        \item Увеличивается не за счёт технологий, а за счёт изменения алгоритма.
+        \item Пример: переход от последовательного перемножения к дереву сдваивания
+        \begin{itemize}
+            \item последовательная схема: критический путь $O(n)$;
+            \item дерево: критический путь $O(\log n)$.
+        \end{itemize}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \centering
+      \begin{tikzpicture}[>=Stealth,node distance=0.7cm]
+        \tikzstyle{v}=[circle,draw,inner sep=1.2pt,minimum size=6pt]
+
+        \node[v] (a1) {}; \node[v,right=0.7cm of a1] (a2) {};
+        \node[v,right=0.7cm of a2] (a3) {}; \node[v,right=0.7cm of a3] (a4) {};
+
+        \node[v,below=0.7cm of a1] (b1) {};
+        \node[v,below=0.7cm of a3] (b2) {};
+
+        \node[v,below=0.7cm of b1] (c1) {};
+
+        \draw[->] (a1) -- (b1);
+        \draw[->] (a2) -- (b1);
+        \draw[->] (a3) -- (b2);
+        \draw[->] (a4) -- (b2);
+        \draw[->] (b1) -- (c1);
+        \draw[->] (b2) -- (c1);
+      \end{tikzpicture}
+
+      {\small Дерево сдваивания}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+
+\begin{frame}{Графы алгоритмов в современных системах}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \begin{itemize}
+        \item Современные вычислительные фреймворки используют DAG как основную модель выполнения.
+        \item Spark: построение DAG при трансформациях, оптимизация планов и распределение задач по узлам.
+        \item Dask: динамическое построение графа операций для задач разной гранулярности.
+        \item TensorFlow/JAX: граф вычислений для оптимизации порядка операций и размещения на устройствах.
+      \end{itemize}
+    \end{column}
+
+    \begin{column}{0.45\textwidth}
+      \centering
+      \begin{tikzpicture}[>=Stealth,node distance=0.8cm]
+        \tikzstyle{v}=[rectangle,rounded corners,draw,inner sep=3pt,minimum width=1cm]
+
+        \node[v] (a) {Read};
+        \node[v,below left=1.0cm of a] (b) {Map};
+        \node[v,below right=1.0cm of a] (c) {Filter};
+        \node[v,below=1.0cm of b] (d) {Shuffle};
+        \node[v,below=1.0cm of c] (e) {Aggregate};
+        \node[v,below=1.0cm of d] (f) {Write};
+
+        \draw[->] (a) -- (b);
+        \draw[->] (a) -- (c);
+        \draw[->] (b) -- (d);
+        \draw[->] (c) -- (e);
+        \draw[->] (d) -- (f);
+        \draw[->] (e) -- (f);
+      \end{tikzpicture}
+
+      {\small Пример DAG-плана в стиле Spark}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}{Заключение}
+
+\begin{beamercolorbox}[rounded=true,shadow=true,sep=1em]{block body}
+  \begin{itemize}
+    \item Граф зависимостей отражает реальную структуру алгоритма.
+    \item Именно он определяет, какой параллелизм принципиально возможен.
+    \item Ускорение достигается через изменение структуры вычислений.
+    \item Поэтому современные системы используют DAG как естественную форму исполнения.
+  \end{itemize}
+\end{beamercolorbox}
+
+\end{frame}
+
+
+\begin{frame}{Литература}
+
+\begin{beamercolorbox}[rounded=true,shadow=true,sep=1.2em]{block body}
+
+\begin{itemize}
+  \item \textbf{Бурова И.\,Г., Демьянович Ю.\,К.}\\
+  \emph{Алгоритмы параллельных вычислений и программирование}.\\
+  СПб.: Изд-во СПбГУ, 2007.
+
+  \vspace{0.7em}
+
+  \item \textbf{Воеводин В.\,В., Воеводин Вл.\,В.}\\
+  \emph{Параллельные вычисления}.\\
+  СПб.: БХВ-Петербург, 2004.
+
+  \vspace{0.7em}
+
+  \item \textbf{A. Grama, A. Gupta, G. Karypis, V. Kumar}\\
+  \emph{Introduction to Parallel Computing}.
+  Addison–Wesley, 2003.
+\end{itemize}
+\end{beamercolorbox}
+\end{frame}
+
+
+
+
+\end{document}
