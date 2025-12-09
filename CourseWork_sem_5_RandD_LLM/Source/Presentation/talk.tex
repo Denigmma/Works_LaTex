@@ -20,11 +20,11 @@
 \newcommand{\academicGroup}{\my@title@group@ru}
 \newcommand{\advisorChair}{\my@title@chair@ru}
 % То, что в квадратных скобках, отображается внизу по центру каждого слайда.
-\title[Auto parsing system]{\my@title@title@ru}
+\title[benchmark prompt-injections]{\my@title@title@ru}
 % То, что в квадратных скобках, отображается в левом нижнем углу.
 \author[\my@title@author@ru]{\my@title@author@ru, группа \academicGroup}
 \institute[СПбГУ]{}
-\date[8 июня 2025 г.]{}
+\date[25.11.2025]{}
 \newcommand{\supervisor}{\my@title@supervisor@ru}
 \newcommand{\supervisorPosition}{\my@title@supervisorPosition@ru}
 \newcommand{\consultant}{\my@title@consultant@ru}
@@ -34,6 +34,8 @@
 \newcommand{\defenseYear}{\my@title@year@ru}
 
 \makeatother
+
+
 \begin{document}
 {
 \setbeamertemplate{footline}{}
@@ -67,176 +69,239 @@
 }
 
 
+
 \begin{frame}{Введение}
     \begin{itemize}
-        \item Веб-парсинг: извлечение структурированных данных из веб-страниц
-        \item Проблема: сайты бывают статическими и динамическими, для каждого нужен свой парсер и его постоянная поддержка
-        \item Идея: автоматизация генерации parser-скриптов с помощью больших языковых моделей (LLM)
+        \item Активное внедрение LLM в корпоративные и пользовательские сервисы.
+        \item Рост требований к предсказуемости и безопасности поведения моделей.
+        \item Промт-инъекции — один из ключевых классов угроз.
+        \item Банковско-финансовый домен — высокорегулируемая и чувствительная область.
+        \item Необходима системная оценка устойчивости моделей в таких условиях.
     \end{itemize}
 \end{frame}
 
-\begin{frame}{Существующие решения и их недостатки}
-    \begin{itemize}
-        \item \textbf{Статический парсинг (requests + BeautifulSoup)}
-            \begin{itemize}
-                \item + Лёгкость и скорость запуска
-                \item – Не работает с динамическим JS-контентом, требует ручных селекторов
-            \end{itemize}
-        \item \textbf{Динамический парсинг (Selenium)}
-            \begin{itemize}
-                \item + Обходит любой JS
-                \item – Тоже требует писать и поддерживать скрипты-парсеры под каждую структуру
-            \end{itemize}
-        \item \textbf{Общий недостаток}: отсутствует единый самонастраивающийся механизм — при изменении верстки ручной код ломается
-    \end{itemize}
+
+
+
+\begin{frame}{Промт-инъекции и существующие подходы}
+
+\textbf{Основные классы инъекций:}
+
+\begin{itemize}
+    \item \textbf{Direct Prompt Injection} — прямое переопределение инструкций.
+    \item \textbf{Indirect Prompt Injection} — скрытые вставки, маскировка инструкций.
+    \item \textbf{Harmful Code Generation} — побуждение к генерации опасного или вредоносного кода.
+\end{itemize}
+
+\vspace{0.3cm}
+
+\begin{center}
+\begin{tikzpicture}[node distance=1.7cm, every node/.style={font=\small}]
+\node (root) [draw, rounded corners, thick, fill=blue!10, minimum width=3.5cm] {Prompt Injection};
+\node (d1) [below left of=root, xshift=-1.5cm, draw, rounded corners] {Direct};
+\node (d2) [below of=root, draw, rounded corners] {Indirect};
+\node (d3) [below right of=root, xshift=1.5cm, draw, rounded corners] {Harmful Code};
+
+\draw[->, thick] (root) -- (d1);
+\draw[->, thick] (root) -- (d2);
+\draw[->, thick] (root) -- (d3);
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.2cm}
+
+\begin{itemize}
+    \item Существующие бенчмарки редко охватывают реальные бизнес-сценарии.
+    \item Особенно слабое покрытие — финансовый домен и агентные системы.
+\end{itemize}
+
 \end{frame}
 
-\begin{frame}{LLM-подход и семантический кэш}
-    \begin{itemize}
-        \item \textbf{Structuring}: извлечение ответа на запрос пользователя напрямую из очищенного текста страницы
-        \item \textbf{Codegen (двойное применение LLM)}:
-            \begin{itemize}
-                \item \emph{HintGen}: генерирует подсказки, селекторы и few-shot примеры
-                \item \emph{CodeGen}: на основе подсказок формирует Python-скрипт-парсер и выполняет его
-            \end{itemize}
-        \item \textbf{Проблемы}: дороговизна запросов в LLM и время инференса ответа
-        \item \textbf{Решение}: семантический кэш (SQLite + ChromaDB), для одинаковых ссылок и схожих embedding запросов - запросы в LLM не отправляются, а используются ранее кешированные парсеры
-    \end{itemize}
-\end{frame}
+
+
 
 \begin{frame}{Постановка задачи}
-    \textbf{Цель проекта:} оптимизировать сбор данных из открытых веб-источников за счёт автоматизации написания парсеров веб-страниц с помощью больших языковых моделей (LLM)
 
-    \vspace{1em}
-    \textbf{Задачи:}
-    \begin{itemize}
-        \item Определять тип страницы (статическая или динамическая)
-        \item Реализовать две стратегии очистки HTML (Full / Lite)
-        \item Внедрить режимы LLM-парсинга: Structuring и Codegen
-        \item Построить семантический кэш (SQLite + ChromaDB)
-        \item Разработать интерфейсы: REST API, веб-фронтенд, Gradio
-        \item Провести экспериментальное исследование
-    \end{itemize}
+\textbf{Цель работы:}
+исследование и формирование размеченного корпуса промт-инъекций для больших языковых моделей
+с последующей разработкой воспроизводимого бенчмарка устойчивости в финансовом домене.
+
+\vspace{0.4cm}
+
+\textbf{Основные задачи:}
+\begin{enumerate}
+    \item Изучение и выделение актуальных техник промт-инъекций, релевантных нашей задаче.
+    \item Определение тематик и подтемат финансового домена, значимых для моделирования пользовательских сценариев.
+    \item Разработка системы генерации корпуса данных, включающей два независимых пайплайна: base и agent.
+    \item Разработка системы валидации с использованием LLM-ассессора и анализ качества полученных данных.
+\end{enumerate}
+
 \end{frame}
+
+
+
+
 
 
 \begin{frame}{Архитектура решения}
-    \begin{center}
-        \resizebox{\textwidth}{!}{%
-        \begin{tikzpicture}[
-            >=latex,
-            node distance=0.8cm and 1.5cm,
-            block/.style={
-                draw=black,
-                fill=blue!15,
-                thick,
-                rectangle,
-                rounded corners,
-                minimum height=2cm,
-                minimum width=4cm,
-                inner sep=5mm,
-                align=center,
-                font=\bfseries\Large
-            },
-            arrow/.style={
-                ->,
-                thick
-            }
-        ]
-            % Основная линия
-            \node[block]                       (input)   {Ввод URL\\и запроса};
-            \node[block,right=of input]        (detect)  {Детектор\\динамичности};
-            \node[block,right=of detect]       (fetch)   {Fetcher\\(requests / Selenium)};
-            \node[block,right=of fetch]        (clean)   {Очистка\\(Full / Lite)};
-            \node[block,right=of clean]        (dispatch){Диспетчер\\режимов};
-            \node[block,right=of dispatch]     (cache)   {Семантический\\кэш};
-            \node[block,right=of cache]        (output)  {Вывод JSON};
 
-            % Ветви LLM
-            \node[block,above=of dispatch]     (struct)  {Structuring\\(извлечение ответа)};
-            \node[block,below=of dispatch]     (codegen) {Codegen\\(HintGen → CodeGen)};
+\begin{center}
+\begin{tikzpicture}[
+    level 1/.style={sibling distance=25mm, level distance=15mm},
+    level 2/.style={sibling distance=32mm, level distance=12mm},
+    box/.style={rectangle, draw, rounded corners, text centered, minimum width=2.3cm, minimum height=0.7cm, fill=gray!10},
+    main/.style={box, fill=blue!15},
+    validator/.style={box, fill=green!18}
+]
 
-            % Стрелки
-            \draw[arrow] (input)    -- (detect)
-                          (detect)  -- (fetch)
-                          (fetch)   -- (clean)
-                          (clean)   -- (dispatch)
-                          (dispatch)-- (cache)
-                          (cache)   -- (output);
+\node[main]{Data generation}
+    child { node[box]{Pipelines} }
+    child { node[box]{Batching} }
+    child { node[box]{Model client} }
+    child { node[box]{Database} }
+    child { node[box]{Logging} }
+    child { node[validator]{Validation} };
 
-            \draw[arrow] (dispatch) -- (struct) -- (cache);
-            \draw[arrow] (dispatch) -- (codegen) -- (cache);
-        \end{tikzpicture}
-        }
-    \end{center}
+\end{tikzpicture}
+\end{center}
+
+\vspace{0.3cm}
+
+\begin{itemize}
+  \item Модульная структура обеспечивает воспроизводимость и масштабируемость.
+  \item Пайплайны определяют конфигурации, тематики и типы инъекций.
+  \item Валидация выделена отдельно как этап контроля качества корпуса.
+\end{itemize}
+
 \end{frame}
 
 
 
 
-\begin{frame}{Результаты экспериментального исследования}
-    \begin{table}
-        \centering
-        \small
-        \begin{tabular}{lcccc}
-            \toprule
-            \textbf{Сайт / Запрос} & \textbf{Codegen (cold)} & \textbf{Codegen (warm)} & \textbf{Structuring} \\
-            \midrule
-            \textbf{Gismетео} & & & & \\
-            «Текущая температура в СПБ»      & 23.28 & 5.61 & 8.62 \\
-            \addlinespace
-            \textbf{СПбГУ} & & & & \\
-            «Выведи последние новости СПбГУ»  & 40.91 & 6.09 & 7.34 \\
-            \addlinespace
-            \textbf{Яндекс.Финанс} & & & & \\
-            «Курс доллара к рублю»           & 17.59 & 4.61 & 12.23 \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
-\end{frame}
+\begin{frame}{Пайплайны генерации}
 
+\begin{itemize}
 
-\begin{frame}[fragile]{Примеры JSON-ответов}
-    \begin{block}{Gismетео: «Текущая температура в Санкт-Петербурге»}
-\begin{lstlisting}[language=json,breaklines,keepspaces]
-{
-  "query_data": "Текущая температура в Санкт-Петербурге: +11°C\nТемпература по ощущению: +10°C\n"
-}
-\end{lstlisting}
-    \end{block}
-
-    \begin{block}{Яндекс.Финанс: «Курс доллара США к рублю»}
-\begin{lstlisting}[language=json,breaklines,keepspaces]
-{
-  "query_data": "Курс доллара США к рублю: 78,62 руб\nИзменение курса: −2,88 руб (−3,53%)\nИсточник: ЦБ РФ\n"
-}
-\end{lstlisting}
-    \end{block}
-\end{frame}
-
-\begin{frame}{Итоги работы}
+    \item \textbf{Base pipeline}
     \begin{itemize}
-        \item Разработана модульная система для парсинга статических и динамических веб-страниц
-        \item Реализованы два режима LLM-генерации парсеров:
-            \begin{itemize}
-                \item прямое извлечение ответа из текста (Structuring)
-                \item генерация Python-скрипта с помощью подсказок (Codegen)
-            \end{itemize}
-        \item Внедрён семантический кэш для повторного использования сгенерированных скриптов
-        \item Предоставлены разные интерфейсы: библиотека, REST API, веб-приложение и Gradio
-        \item Экспериментально подтверждена эффективность подхода на реальных сайтах
+        \item моделирует обычного финансового ассистента;
+        \item пользователю задаются бытовые финансовые вопросы;
+        \item вредоносные элементы встроены в сам пользовательский запрос;
+        \item цель — проверить, склонна ли модель нарушать ограничения в публичном взаимодействии.
     \end{itemize}
+
+    \vspace{0.35cm}
+
+    \item \textbf{Agent pipeline}
+    \begin{itemize}
+        \item моделирует синтетического внутреннего агента;
+        \item заранее задаётся предметная область, роль и доступные функции;
+        \item пользовательский запрос пытается использовать эти «полномочия» во вред;
+        \item цель — проверить устойчивость в сценариях с повышенным уровнем доверия.
+    \end{itemize}
+
+\end{itemize}
+
 \end{frame}
 
 
-\begin{frame}
-    \begin{center}
-        \includegraphics[width=6cm]{figures/qr.png}
-        \vspace{1em}
 
-        \scriptsize{Воспользоваться проектом можно, отсканировав QR-код для перехода на Hugging Face Space}
-    \end{center}
+
+
+\begin{frame}{Валидация сгенерированных данных}
+
+\textbf{Цель:} проверить качество и корректность примеров через подход \emph{LLM-as-a-Judge}.
+
+\vspace{6pt}
+
+\textbf{Как устроена валидация:}
+\begin{itemize}
+  \item стратифицированный отбор $\sim$10\% корпуса (по темам, типам и целям инъекций);
+  \item модель-судья анализирует пару \emph{system\_text + user\_text};
+  \item выдаёт оценки по фиксированным критериям и финальный флаг \texttt{pass}.
+\end{itemize}
+
+\vspace{6pt}
+
+\textbf{Критерии оценки:}
+\begin{itemize}
+  \item \textbf{Topical relevance} — соответствие теме и финансовому сценарию;
+  \item \textbf{Injection fidelity} — корректная реализация типа инъекции;
+  \item \textbf{Safety awareness} — отсутствие лишних отказов и шумовых фраз;
+  \item \textbf{Clarity \& format} — структурность и читаемость текста;
+  \item \textbf{Consistency score} (для agent) — согласованность роли и поведения.
+\end{itemize}
+
+\vspace{4pt}
+Итоговый \texttt{pass\_flag} определяется по строгим порогам для каждого пайплайна.
+
 \end{frame}
+
+
+
+\begin{frame}{Результаты валидации}
+
+\textbf{Общие показатели:}
+\begin{itemize}
+    \item \textbf{Base}: 281 примеров, pass-rate — 76.9\%, средний overall — 6.63.
+    \item \textbf{Agent}: 126 примеров, pass-rate — 96.8\%, средний overall — 7.77.
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Ключевые статистические наблюдения:}
+\begin{itemize}
+    \item В base хуже всего проходят проверку:
+          — \textit{Embedded Malicious Payload}: 55\%
+          — \textit{Payload Splitting}: 63\%
+    \item Лучшие темы в base: «Инвестиции» — 84\% pass-rate.
+    \item В agent большинство тем и типов показывают 100\% прохождения.
+    \item Даже сложные цели (мошенничество, вредоносный код) в agent устойчивы: >90\% pass-rate.
+\end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}{Итоги и дальнейшая работа}
+
+\textbf{Что достигнуто:}
+\begin{itemize}
+    \item Построен и размечен корпус промт-инъекций в финансовом домене.
+    \item Реализована воспроизводимая система генерации и валидации (LLM-as-a-Judge).
+    \item Получены устойчивые экспериментальные результаты по двум сценариям — base и agent.
+\end{itemize}
+
+\vspace{0.5em}
+
+\textbf{Дальнейшая работа:}
+\begin{itemize}
+    \item Проведение широкого бенчмарка устойчивости современных моделей на созданном датасете.
+    \item Сравнение популярных LLM по уязвимости к различным типам атак.
+    \item Исследование защитных механизмов и анализ типичных ошибок моделей.
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}{Исходный код и датасет}
+
+\begin{center}
+\begin{tabular}{ccc}
+\includegraphics[width=5cm]{figures/qr_github.png} &
+\hspace{1cm} &
+\includegraphics[width=5cm]{figures/qr_kaggle.png} \\
+\end{tabular}
+
+\vspace{1em}
+
+\small Исходный код проекта и полученный сет, включая данные валидации доступны по qr кодам:
+\end{center}
+
+\end{frame}
+
+
+
 
 \end{document}
 
