@@ -1,0 +1,286 @@
+\documentclass[aspectratio=1610,12pt]{beamer}
+
+%  Русский язык и шрифты (pdfLaTeX)
+\usepackage[T2A]{fontenc}          % Кириллица (кодировка шрифтов)
+\usepackage[utf8]{inputenc}        % Кодировка исходника UTF-8
+\usepackage[russian]{babel}        % Локализация и переносы
+\usepackage{cmap}                  % Поисковость/копируемость текста в PDF (кириллица)
+
+%  Математика и графика
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{graphicx}
+\graphicspath{{./}{./figures/}}     % добавь путь к папке с картинками при необходимости
+
+%  Ссылки
+\usepackage{hyperref}
+\hypersetup{unicode=true}
+
+%  Оформление beamer
+\usetheme{Madrid}                   % при желании: CambridgeUS, Berlin и т.д.
+\usecolortheme{default}
+\usefonttheme{serif}                % шрифт с засечками (как в отчёте)
+\setbeamertemplate{navigation symbols}{}  % убрать нав. кнопки
+\setbeamertemplate{footline}[frame number] % номер слайда внизу справа
+
+\begin{document}
+
+\title[RLHF и DPO]{RLHF и Direct Preference Optimization}
+\author[Мурадян Д. С.]{Мурадян Денис Степанович}
+\institute[СПбГУ, ММФ]{Предмет: «Вероятностные алгоритмы»\\Санкт\mbox{-}Петербургский государственный университет\\
+Математико\mbox{-}механический факультет\\
+Искусственный интеллект и наука о данных\\[0.3em]
+Бакалавриат, 3 курс}
+\date{\number\year}
+
+\titlegraphic{\vspace{-1em}\includegraphics[height=1.2cm]{spbu_logo.png}}
+
+% титульный слайд
+\begin{frame}
+  \titlepage
+\end{frame}
+
+
+% --- Слайд 2: Введение ---
+\begin{frame}{Введение: от NTP к SFT и задаче выравнивания}
+\begin{itemize}
+  \item \textbf{Предобучение (NTP):} модель обучается предсказывать следующий токен
+  \[
+    \pi_\theta(y\mid x)=\prod_{t=1}^{T}\pi_\theta(y_t\mid x,y_{<t})
+  \]
+  \item \textbf{Ограничение:} правдоподобный текст не всегда соответствует ожиданиям человека
+  \item \textbf{SFT:} дообучение по парам «запрос — эталонный ответ»
+  \[
+    \max_\theta \ \mathbb{E}_{(x,y^{*})}\big[\log \pi_\theta(y^{*} \mid x)\big]
+  \]
+  \item \textbf{Интуитивная цель:} сдвинуть распределение ответов модели к желаемому поведению
+\end{itemize}
+\end{frame}
+
+% --- Слайд 3: Актуальность ---
+\begin{frame}{Актуальность: от эталонных ответов к предпочтениям}
+\begin{itemize}
+  \item После \textbf{SFT} остаётся множество допустимых, но неравноценных ответов
+  \item Качество ответа часто задаётся \textbf{относительно}, а не абсолютно
+    \item Цель: изменить распределение $\pi_\theta(y\mid x)$ так, чтобы предпочтительные ответы
+        становились более вероятными
+  \item \textbf{RLHF (Reinforcement Learning from Human Feedback)}
+\end{itemize}
+\end{frame}
+
+
+% --- Слайд 4: Общая идея RLHF ---
+\begin{frame}{Общая идея RLHF: место в пайплайне обучения}
+\begin{enumerate}
+  \item \textbf{Pretraining (NTP):} обучение на больших текстовых корпусах
+  \item \textbf{SFT:} формирование reference-политики $\pi_{\text{ref}}$
+  \item \textbf{Preference data:} тройки $(x, y_w, y_l)$
+  \begin{itemize}
+    \item \textbf{RLHF (PPO):} генерации $(x, y)$, оценки reward model $r(x,y)$
+    \item \textbf{DPO:} фиксированные пары предпочтений $(x, y_win, y_lose)$
+  \end{itemize}
+  \item \textbf{Alignment:} RLHF (reward model + PPO) \textbf{или} DPO
+\end{enumerate}
+\vspace{0.5em}
+\footnotesize
+Здесь: $x$ — запрос (prompt), $y$ — ответ модели.
+\end{frame}
+
+
+
+% --- Слайд 5: Вероятностная модель LLM как политика ---
+\begin{frame}{Вероятностная модель LLM как политика $\pi_\theta$}
+
+\textbf{Определение.}\;
+$\pi_\theta(y\mid x)$ — политика (policy): распределение вероятностей ответов $y$
+при условии запроса $x$.
+
+\vspace{0.6em}
+
+\textbf{Автогрессивная факторизация:}
+\[
+\pi_\theta(y\mid x)
+=
+\prod_{t=1}^{T}
+\pi_\theta(y_t \mid x, y_{<t})
+\]
+
+\vspace{0.6em}
+
+\textbf{Лог-вероятность ответа:}
+\[
+\log \pi_\theta(y\mid x)
+=
+\sum_{t=1}^{T}
+\log \pi_\theta(y_t \mid x, y_{<t})
+\]
+\end{frame}
+
+
+
+% --- Слайд 6: RLHF как оптимизация ожидаемой награды + KL ---
+\begin{frame}{RLHF: оптимизация ожидаемой награды с контролем отклонения}
+
+\textbf{Цель RLHF:}
+\[
+\max_{\theta}\;
+\mathbb{E}_{y \sim \pi_\theta(\cdot \mid x)}
+\big[ r(x,y) \big]
+\;-\;
+\beta \,
+\mathrm{KL}\!\left(
+\pi_\theta(\cdot \mid x)\;\|\;\pi_{\text{ref}}(\cdot \mid x)
+\right)
+\]
+
+\vspace{0.5em}
+
+\begin{itemize}
+  \item $r(x,y)$ — функция вознаграждения (reward model)
+  \item $\pi_{\text{ref}}$ — reference-политика после SFT
+  \item $\mathrm{KL}$ — мера отклонения распределений
+  \item $\beta > 0$ — коэффициент регуляризации
+\end{itemize}
+
+\end{frame}
+
+
+
+% --- Слайд 7: Почему не всегда PPO ---
+\begin{frame}{Почему не всегда PPO: мотивация Direct Preference Optimization}
+
+\begin{itemize}
+  \item \textbf{RLHF} через \textbf{PPO} решает задачу выравнивания, но требует сложного RL-цикла
+  \item Необходимы:
+  \begin{itemize}
+    \item \textbf{reward model} для оценки качества ответов
+    \item \textbf{critic} для оценки ожидаемой награды
+    \item \textbf{on-policy генерация} и стабилизация обновлений (clipping)
+  \end{itemize}
+  \item Инженерная и вычислительная сложность обучения
+  \item \textbf{Идея DPO}: решить ту же задачу alignment без reward model и RL-цикла
+\end{itemize}
+
+\end{frame}
+
+% --- Слайд 8: DPO — общая идея ---
+\begin{frame}{Direct Preference Optimization: обучение через предпочтения}
+
+\begin{itemize}
+  \item Обучение проводится на фиксированном датасете предпочтений
+  \item Формат данных: $(x, y_{w}, y_{l})$
+  \begin{itemize}
+    \item $y_{w}$ — предпочтительный (winner) ответ
+    \item $y_{l}$ — менее предпочтительный (loser) ответ
+  \end{itemize}
+  \item Цель: сделать $y_{w}$ более вероятным, чем $y_{l}$, при том же $x$
+  \item Reward model и RL-цикл не требуются
+\end{itemize}
+
+\vspace{0.5em}
+
+\footnotesize
+Пример данных:
+\begin{center}
+\begin{minipage}{0.9\linewidth}
+\texttt{\{
+"prompt": "Как приготовить кофе?",\\
+"chosen": "Возьмите кофе, налейте горячую воду, перемешайте.",\\
+"rejected": "Кофе — это вкусный напиток, он бывает разных видов."
+\}}
+\end{minipage}
+\end{center}
+
+\end{frame}
+
+
+% --- Слайд 9: DPO — вероятностная формулировка ---
+\begin{frame}{Direct Preference Optimization: вероятностная формулировка}
+
+\textbf{Логит предпочтения:}
+\[
+s_\theta
+=
+\beta
+\left(
+\log \frac{\pi_\theta(y_w\mid x)}{\pi_{\text{ref}}(y_w\mid x)}
+-
+\log \frac{\pi_\theta(y_l\mid x)}{\pi_{\text{ref}}(y_l\mid x)}
+\right)
+\]
+
+\vspace{0.6em}
+
+\textbf{Функция потерь:}
+\[
+\mathcal{L}_{\text{DPO}}
+=
+-\log \sigma\!\left(s_\theta\right)
+\]
+
+\vspace{0.6em}
+
+\begin{itemize}
+  \item $\pi_{\text{ref}}$ — reference-политика после SFT
+  \item $\beta > 0$ — коэффициент силы предпочтений
+\end{itemize}
+
+\end{frame}
+
+% --- Слайд 10: Примеры использования ---
+% --- Слайд 10: Примеры использования ---
+\begin{frame}{Примеры использования RLHF и DPO}
+
+\begin{block}{Alignment чат-моделей}
+\begin{itemize}
+  \item повышение полезности и связности ответов
+  \item контроль стиля, тона и безопасности
+\end{itemize}
+\end{block}
+
+\begin{block}{Доменные ассистенты}
+\begin{itemize}
+  \item поддержка пользователей и FAQ-системы
+  \item образовательные и аналитические ассистенты
+\end{itemize}
+\end{block}
+
+\begin{block}{Практический пайплайн}
+\begin{itemize}
+  \item SFT $\rightarrow$ сбор предпочтений $\rightarrow$ DPO
+  \item обучение без reward model и RL-цикла
+\end{itemize}
+\end{block}
+
+\begin{alertblock}{Индустриальный пример}
+\begin{itemize}
+  \item \textbf{Яндекс Нейро}: alignment языковой модели с использованием DPO
+\end{itemize}
+\end{alertblock}
+
+\end{frame}
+
+
+
+% --- Слайд 11: Выводы ---
+\begin{frame}{Выводы}
+
+\begin{itemize}
+  \item LLM задаёт распределение ответов $\pi_\theta(y\mid x)$
+  \item Alignment — это целенаправленный сдвиг этого распределения
+  \item RLHF формулируется как оптимизация ожидаемой награды с KL-контролем
+  \item PPO реализует RLHF, но требует сложного RL-цикла
+  \item DPO напрямую оптимизирует предпочтения и упрощает обучение
+\end{itemize}
+
+\end{frame}
+
+
+
+
+
+% титульный слайд
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\end{document}
