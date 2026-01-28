@@ -1,0 +1,215 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=2.2cm}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  tabsize=2,
+  showstringspaces=false,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{teal},
+  columns=fullflexible,
+  keepspaces=true
+}
+
+\title{Модели дискретных сигналов. Задача 2 (отборочный этап)}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Постановка задачи}
+Известно, что
+\[
+x_k = A\cos(\omega k),\qquad \omega\in[0,\pi],
+\]
+и выполнена периодичность
+\[
+x_{k+N}=x_k \quad \forall k\in\mathbb{Z}.
+\]
+В файле \texttt{B.txt} дана зашумлённая последовательность $\{y_k\}_{k=0}^{N-1}$:
+\[
+y_k = x_k + \varepsilon_k,
+\]
+где $\varepsilon_k$ --- равномерно распределённый шум.
+
+Требуется:
+\begin{enumerate}
+\item определить $\omega$;
+\item найти коэффициент $A$, минимизирующий среднеквадратичную ошибку
+\[
+E(A)=\frac{1}{N}\sum_{k=0}^{N-1}\left(y_k-x_k\right)^2
+=\frac{1}{N}\sum_{k=0}^{N-1}\left(y_k-A\cos(\omega k)\right)^2.
+\]
+\end{enumerate}
+Численные ответы представить с точностью до $0.0001$ и приложить рассуждения, листинг и графики.
+
+\section{Использование условия периодичности}
+Так как $x_{k+N}=x_k$ при всех $k$, то
+\[
+\cos(\omega(k+N))=\cos(\omega k)\quad \forall k.
+\]
+Достаточно потребовать периодичность аргумента косинуса по $2\pi$:
+\[
+\omega N = 2\pi m,\quad m\in\mathbb{Z},
+\]
+откуда
+\begin{equation}
+\omega=\frac{2\pi m}{N}.
+\label{eq:omega}
+\end{equation}
+С учётом $\omega\in[0,\pi]$ получаем ограничение на $m$:
+\[
+0\le \frac{2\pi m}{N}\le \pi \quad\Rightarrow\quad 0\le m\le \frac{N}{2}.
+\]
+Значит, $\omega$ выбирается из конечного набора кандидатов \eqref{eq:omega}.
+
+\section{Оптимальный $A$ при фиксированном $\omega$}
+При фиксированном $\omega$ функция ошибки равна
+\[
+E(A)=\frac{1}{N}\sum_{k=0}^{N-1}\left(y_k-Ac_k\right)^2,\qquad c_k=\cos(\omega k).
+\]
+Это квадратичная функция по $A$. Найдём минимум:
+\[
+\frac{dE}{dA}=\frac{2}{N}\sum_{k=0}^{N-1}\left(y_k-Ac_k\right)(-c_k)=0
+\]
+\[
+\Rightarrow\quad \sum_{k=0}^{N-1} y_k c_k = A\sum_{k=0}^{N-1} c_k^2,
+\]
+откуда
+\begin{equation}
+A^\ast(\omega)=\frac{\sum_{k=0}^{N-1} y_k \cos(\omega k)}{\sum_{k=0}^{N-1}\cos^2(\omega k)}.
+\label{eq:Aopt}
+\end{equation}
+Далее для каждого допустимого $m$ вычисляются $\omega=\frac{2\pi m}{N}$, затем $A^\ast(\omega)$ по \eqref{eq:Aopt} и значение $E(A^\ast)$.
+Выбирается $\omega$, дающее минимальную ошибку.
+
+\section{Численные результаты}
+По данным файла получено $N=500$.
+Перебор $m=0,1,\dots,250$ дал минимум ошибки при
+\[
+m=195,\qquad
+\omega=\frac{2\pi\cdot 195}{500}=\frac{39\pi}{50}=2.4504422698\ldots
+\]
+Оптимальный коэффициент
+\[
+A = 40.7569637721\ldots
+\]
+
+\subsection*{Ответ (точность $0.0001$)}
+\[
+\boxed{\omega = 2.4504},\qquad
+\boxed{A = 40.7570}.
+\]
+
+\section{Графики}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{task2_fit_plot.png}
+\caption{Сравнение зашумлённых данных $y_k$ и аппроксимации $A\cos(\omega k)$ при найденных $\omega$ и $A$.}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\linewidth]{task2_mse_plot.png}
+\caption{Зависимость MSE от $m$ для кандидатов $\omega=\frac{2\pi m}{N}$. Минимум достигается при $m=195$.}
+\end{figure}
+
+\section{Листинг программы (Python)}
+\begin{lstlisting}[language=Python]
+# -*- coding: utf-8 -*-
+import numpy as np
+import math
+import pathlib
+import matplotlib.pyplot as plt
+
+path = "B.txt"
+
+y = np.array([float(v) for v in pathlib.Path(path).read_text().split()])
+N = len(y)
+k = np.arange(N)
+
+best = None
+
+for m in range(0, N // 2 + 1):
+    omega = 2.0 * math.pi * m / N
+    c = np.cos(omega * k)
+
+    denom = float(np.dot(c, c))
+    if denom < 1e-12:
+        continue
+
+    A = float(np.dot(y, c) / denom)
+    xhat = A * c
+
+    mse = float(np.mean((y - xhat) ** 2))
+    cand = (mse, m, omega, A, xhat)
+    if best is None or cand[0] < best[0]:
+        best = cand
+
+mse, m, omega, A, xhat = best
+
+print("N =", N)
+print("m =", m)
+print("omega =", omega)
+print("A =", A)
+print("MSE =", mse)
+
+print("omega_4dp =", "{:.4f}".format(omega))
+print("A_4dp =", "{:.4f}".format(A))
+
+plt.figure(figsize=(9, 4))
+plt.plot(k, y, label="y_k", linewidth=1.0)
+plt.plot(k, xhat, label="A*cos(omega*k)", linewidth=1.0)
+plt.xlabel("k")
+plt.ylabel("value")
+plt.title("Noisy data and fitted cosine")
+plt.grid(True, alpha=0.3)
+plt.legend()
+plt.tight_layout()
+plt.savefig("task2_fit_plot.png", dpi=200)
+plt.close()
+
+ms = np.arange(0, N // 2 + 1)
+mses = np.zeros_like(ms, dtype=float)
+
+for idx, mm in enumerate(ms):
+    ww = 2.0 * math.pi * mm / N
+    cc = np.cos(ww * k)
+    denom2 = float(np.dot(cc, cc))
+    if denom2 < 1e-12:
+        mses[idx] = np.nan
+        continue
+    AA = float(np.dot(y, cc) / denom2)
+    mses[idx] = float(np.mean((y - AA * cc) ** 2))
+
+plt.figure(figsize=(9, 4))
+plt.plot(ms, mses)
+plt.xlabel("m")
+plt.ylabel("MSE")
+plt.title("MSE vs m for omega = 2*pi*m/N")
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig("task2_mse_plot.png", dpi=200)
+plt.close()
+\end{lstlisting}
+
+\end{document}

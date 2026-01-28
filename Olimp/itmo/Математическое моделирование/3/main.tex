@@ -1,0 +1,210 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+
+\usepackage{amsmath,amssymb}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=2.2cm}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  tabsize=2,
+  showstringspaces=false,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{teal},
+  columns=fullflexible,
+  keepspaces=true
+}
+
+\title{Модели дискретных сигналов. Задача 3 (отборочный этап)}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{Постановка задачи}
+На рисунке дан график функции $|f(\omega)|$, где
+\[
+f(\omega)=\sum_{k=0}^{\infty} a^{k}e^{-i\omega k}.
+\]
+Известно, что график пересекает ось ординат ($\omega=0$) в точке перегиба.
+По графику требуется найти:
+\[
+|a|,\quad \min |f|,\quad \Re(a),\quad \Im(a)
+\]
+с точностью до $0.0001$.
+
+\section{Переход к явной формуле}
+По определению функция имеет вид
+\[
+f(\omega)=\sum_{k=0}^{\infty} a_k e^{-i\omega k}.
+\]
+В данной задаче предполагается, что коэффициенты последовательности имеют вид
+\[
+a_k = a^k,
+\]
+где $a\in\mathbb{C}$ — фиксированное комплексное число.
+В этом случае функция $f(\omega)$ представляется в виде геометрического ряда:
+\[
+f(\omega)=\sum_{k=0}^{\infty} (a e^{-i\omega})^k.
+\]
+При условии $|a|<1$ данный ряд сходится, и его сумма выражается в замкнутом виде:
+\[
+f(\omega)=\frac{1}{1-ae^{-i\omega}}.
+\]
+
+Рассмотрим модуль полученной функции:
+\[
+|f(\omega)|=\frac{1}{|1-ae^{-i\omega}|}.
+\]
+Запишем комплексное число $a$ в полярной форме:
+\[
+a = r e^{i\theta},\qquad r=|a|,\quad \theta=\arg a.
+\]
+Тогда
+\[
+|1-ae^{-i\omega}|^2
+=
+\left|1-re^{i(\theta-\omega)}\right|^2
+=
+1+r^2-2r\cos(\theta-\omega),
+\]
+и, следовательно,
+\begin{equation}
+|f(\omega)|=\frac{1}{\sqrt{1+r^2-2r\cos(\theta-\omega)}}.
+\label{eq:mag}
+\end{equation}
+
+
+\section{Использование данных с графика}
+
+\subsection{Максимум $|f|$}
+Из \eqref{eq:mag} видно, что максимум $|f|$ достигается при минимуме знаменателя,
+то есть при $\cos(\theta-\omega)=1$:
+\[
+\max |f| = \frac{1}{|1-r|}=\frac{1}{1-r}.
+\]
+По графику горизонтальная штриховая линия показывает значение максимума:
+\[
+\max |f| = 2.2.
+\]
+Отсюда
+\[
+\frac{1}{1-r}=2.2 \quad\Rightarrow\quad 1-r=\frac{1}{2.2}=\frac{5}{11}
+\quad\Rightarrow\quad r=\frac{6}{11}.
+\]
+Итак,
+\[
+|a|=r=\frac{6}{11}=0.5454545\ldots
+\]
+
+\subsection{Минимум $|f|$}
+Минимум $|f|$ соответствует максимуму знаменателя (при $\cos(\theta-\omega)=-1$):
+\[
+\min |f|=\frac{1}{1+r}.
+\]
+Подставляя $r=\frac{6}{11}$:
+\[
+\min |f|=\frac{1}{1+\frac{6}{11}}=\frac{1}{\frac{17}{11}}=\frac{11}{17}
+=0.6470588\ldots
+\]
+
+\subsection{Условие перегиба в точке $\omega=0$ и определение фазы}
+Обозначим
+\[
+g(\omega)=|f(\omega)|.
+\]
+По условию задачи график $|f(\omega)|$ пересекает ось ординат в точке перегиба, то есть
+\[
+g''(0)=0.
+\]
+
+Из формулы
+\[
+|f(\omega)|=\frac{1}{\sqrt{1+r^2-2r\cos(\theta-\omega)}}
+\]
+получаем
+\[
+g(\omega)=\left(1+r^2-2r\cos(\theta-\omega)\right)^{-1/2}.
+\]
+Дифференцируя по $\omega$ и подставляя $\omega=0$, получаем условие перегиба в виде алгебраического уравнения относительно $c=\cos\theta$:
+\begin{equation}
+r c^2 + (1+r^2)c - 3r = 0.
+\label{eq:quad}
+\end{equation}
+
+Подставляя найденное ранее значение $r=\frac{6}{11}$ и приводя к целым коэффициентам, получаем:
+\[
+66c^2 + 157c - 198 = 0.
+\]
+
+\section*{Ответ (точность $0.0001$)}
+\[
+\boxed{|a| = 0.5455},\qquad
+\boxed{\min |f| = 0.6471},\qquad
+\boxed{\Re(a)=0.4973},\qquad
+\boxed{\Im(a)=0.2241}.
+\]
+
+\section{График}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\linewidth]{plot.png}
+\caption{Данный в условии график зависимости $|f(\omega)|$.}
+\end{figure}
+
+\section{Листинг программы (Python)}
+\begin{lstlisting}[language=Python]
+import math
+
+f_max = 2.2
+
+r = 1.0 - 1.0 / f_max
+
+A = r
+B = 1.0 + r*r
+C = -3.0 * r
+
+disc = B*B - 4.0*A*C
+c1 = (-B + math.sqrt(disc)) / (2.0*A)
+c2 = (-B - math.sqrt(disc)) / (2.0*A)
+
+candidates = []
+for c in (c1, c2):
+    if -1.0 <= c <= 1.0:
+        theta = math.acos(c)
+        candidates.append((theta, c))
+
+theta, c = min(candidates, key=lambda t: t[0])
+
+f_min = 1.0 / (1.0 + r)
+
+re_a = r * math.cos(theta)
+im_a = r * math.sin(theta)
+
+print("abs_a =", "{:.10f}".format(r))
+print("min_abs_f =", "{:.10f}".format(f_min))
+print("re_a =", "{:.10f}".format(re_a))
+print("im_a =", "{:.10f}".format(im_a))
+
+print("abs_a_4dp =", "{:.4f}".format(r))
+print("min_abs_f_4dp =", "{:.4f}".format(f_min))
+print("re_a_4dp =", "{:.4f}".format(re_a))
+print("im_a_4dp =", "{:.4f}".format(im_a))
+\end{lstlisting}
+
+\end{document}
